@@ -17,12 +17,3 @@ class SecurMail extends StatelessWidget {
     );
   }
 }
-// test
-// test 2
-// test
-//asdfasdfaghfkjlafasfdasfd
-//swilam test
-//swilma test 2
-//asfd
-//waad test 8
-//seilam test 3
