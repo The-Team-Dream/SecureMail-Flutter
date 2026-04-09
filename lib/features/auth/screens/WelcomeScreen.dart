@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:securemail/Screens/LoginScreen.dart';
+import 'package:securemail/features/auth/screens/LoginScreen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   @override
