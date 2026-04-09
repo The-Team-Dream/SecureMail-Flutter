@@ -242,11 +242,11 @@ class _LoginScreenState extends State<LoginScreen> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _submit,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF111111),
+          backgroundColor:AppColorLight.button1Color,
           foregroundColor: Colors.white,
           disabledBackgroundColor: const Color(0xFF111111).withOpacity(0.4),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(50),
           ),
           elevation: 0,
         ),
@@ -323,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: AppColorLight.buttonColor,
+          color: AppColorLight.fieldColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: Colors.black.withOpacity(0.08)),
         ),
@@ -380,7 +380,7 @@ class _LoginScreenState extends State<LoginScreen> {
       hintText: hint,
       hintStyle: const TextStyle(color: Color(0xFFABABAB), fontSize: 14),
       filled: true,
-      fillColor: AppColorLight.buttonColor,
+      fillColor: AppColorLight.fieldColor,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
