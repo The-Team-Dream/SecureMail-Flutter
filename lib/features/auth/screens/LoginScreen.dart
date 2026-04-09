@@ -4,6 +4,7 @@ import 'package:securemail/core/theme/app_color/AppColorDark.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/utils/validators.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await Future.delayed(const Duration(seconds: 2));
     setState(() => _isLoading = false);
     if (mounted) {
-      // TODO: context.go('/inbox');
+    context.go('/inbox');
     }
   }
 
@@ -286,6 +287,11 @@ class _LoginScreenState extends State<LoginScreen> {
       height: AppSize.buttonHeightL,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _submit,
+        style: ElevatedButton.styleFrom(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(32), // 👈 هنا الريدياس
+        ),
+      ),
         child: _isLoading
             ? const SizedBox(
                 width:  20,
