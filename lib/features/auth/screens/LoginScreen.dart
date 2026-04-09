@@ -41,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // ── Helper: يجيب الألوان الصح حسب الـ mode ───────────────
   bool get _isDark => Theme.of(context).brightness == Brightness.dark;
 
+  Color get _background           => _isDark ? AppColorDark.background            : AppColorLight.background;
   Color get _text1            => _isDark ? AppColorDark.text1            : AppColorLight.text1;
   Color get _text3            => _isDark ? AppColorDark.text3            : AppColorLight.text3;
   Color get _text4            => _isDark ? AppColorDark.text4            : AppColorLight.text4;
@@ -53,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

@@ -6,7 +6,7 @@ class AppColorDark {
   AppColorDark._();
 
   // ── Background ────────────────────────────────────────────
-  static const Color background       = Color(0xFF030D0A);
+  static const Color background       = Color(0xFF0B1F1A);
 
   // ── Buttons ───────────────────────────────────────────────
   static const Color button1          = Color(0xFF1F8A70);
