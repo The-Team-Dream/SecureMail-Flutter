@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'Screens/SplashScreen.dart';
+import 'package:securemail/Screens/WelcomeScreen.dart';
+import 'package:securemail/core/global/theme/theme_data/ThemeDataLight.dart';
+  
 
 
 void main() {
@@ -12,8 +14,8 @@ class SecurMail extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'SecurMail',
-      theme: ThemeData(primarySwatch: Colors.blue) ,
-      home:SplashScreen(),
+      theme: getThemeLight(), 
+      home:WelcomeScreen(),
     );
   }
 }
