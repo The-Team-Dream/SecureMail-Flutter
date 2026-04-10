@@ -6,7 +6,7 @@ ThemeData getThemeLight() => ThemeData(
   primaryColor: AppColorLight.primaryColor,
   scaffoldBackgroundColor: AppColorLight.backgroundColor, 
   buttonTheme: ButtonThemeData(
-    buttonColor: AppColorLight.button1Color,
+    buttonColor: AppColorLight.buttonColor,
     textTheme: ButtonTextTheme.primary,
   ),
   textTheme: TextTheme(
