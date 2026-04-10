@@ -3,7 +3,8 @@ import 'package:securemail/core/theme/app_color/AppColorLight.dart';
 import 'package:securemail/core/theme/app_color/AppColorDark.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
-import 'package:securemail/features/auth/screens/WelcomeScreen.dart';
+import 'package:go_router/go_router.dart';
+import 'package:securemail/core/router/app_router.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,16 +17,16 @@ class _SplashScreenState extends State<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _progressCtrl;
   late final AnimationController _fadeCtrl;
-  late final Animation<double>   _progressAnim;
-  late final Animation<double>   _fadeAnim;
+  late final Animation<double> _progressAnim;
+  late final Animation<double> _fadeAnim;
 
   String _statusText = 'INITIALIZING BIOMETRICS';
 
   final List<_CheckStep> _steps = [
-    _CheckStep(label: 'INITIALIZING BIOMETRICS',   target: 0.30),
+    _CheckStep(label: 'INITIALIZING BIOMETRICS', target: 0.30),
     _CheckStep(label: 'VERIFYING ENCRYPTION KEYS', target: 0.60),
-    _CheckStep(label: 'SYSTEM INTEGRITY CHECK',    target: 0.88),
-    _CheckStep(label: 'SECURING CONNECTION',       target: 1.00),
+    _CheckStep(label: 'SYSTEM INTEGRITY CHECK', target: 0.88),
+    _CheckStep(label: 'SECURING CONNECTION', target: 1.00),
   ];
 
   @override
@@ -34,7 +35,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Fade in
     _fadeCtrl = AnimationController(
-      vsync:    this,
+      vsync: this,
       duration: const Duration(milliseconds: 800),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
@@ -42,12 +43,12 @@ class _SplashScreenState extends State<SplashScreen>
 
     // Progress bar
     _progressCtrl = AnimationController(
-      vsync:    this,
+      vsync: this,
       duration: const Duration(milliseconds: 2800),
     );
     _progressAnim = CurvedAnimation(
       parent: _progressCtrl,
-      curve:  Curves.easeInOut,
+      curve: Curves.easeInOut,
     );
 
     _progressCtrl.addListener(_updateStatus);
@@ -75,17 +76,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _navigateNext() {
     if (!mounted) return;
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (_, animation, __) {
-          return WelcomeScreen();
-        },
-        transitionsBuilder: (_, animation, __, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: const Duration(milliseconds: 500),
-      ),
-    );
+    context.go(AppRoutes.login);
   }
 
   @override
@@ -100,11 +91,11 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor       = isDark ? AppColorDark.background       : AppColorLight.background;
-    final textPrimary   = isDark ? AppColorDark.text1             : AppColorLight.text1;
-    final textSecondary = isDark ? AppColorDark.text3             : AppColorLight.text3;
-    final accentColor   = isDark ? AppColorDark.button1           : AppColorLight.button1;
-    final progressBg    = isDark ? AppColorDark.card2             : AppColorLight.card2;
+    final bgColor = isDark ? AppColorDark.background : AppColorLight.background;
+    final textPrimary = isDark ? AppColorDark.text1 : AppColorLight.text1;
+    final textSecondary = isDark ? AppColorDark.text3 : AppColorLight.text3;
+    final accentColor = isDark ? AppColorDark.button1 : AppColorLight.button1;
+    final progressBg = isDark ? AppColorDark.card2 : AppColorLight.card2;
 
     return Scaffold(
       backgroundColor: bgColor,
@@ -135,9 +126,9 @@ class _SplashScreenState extends State<SplashScreen>
                       Text(
                         'QUANTUM-ENCRYPTED MESSAGING',
                         style: AppTextStyles.labelS.copyWith(
-                          color:          textSecondary,
-                          letterSpacing:  2.5,
-                          fontSize:       11,
+                          color: textSecondary,
+                          letterSpacing: 2.5,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -151,8 +142,8 @@ class _SplashScreenState extends State<SplashScreen>
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       _buildProgressSection(
-                        accentColor:  accentColor,
-                        progressBg:   progressBg,
+                        accentColor: accentColor,
+                        progressBg: progressBg,
                         textSecondary: textSecondary,
                       ),
                       const SizedBox(height: AppSpacing.x8),
@@ -170,7 +161,7 @@ class _SplashScreenState extends State<SplashScreen>
   // ── Logo ───────────────────────────────────────────────────
   Widget _buildLogo() {
     return Container(
-      width:  160,
+      width: 160,
       height: 160,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -186,10 +177,10 @@ class _SplashScreenState extends State<SplashScreen>
   Widget _buildFallbackLogo() {
     // لو الصورة مش موجودة بيعرض placeholder
     return Container(
-      width:  160,
+      width: 160,
       height: 160,
       decoration: BoxDecoration(
-        color:        AppColorLight.button1.withOpacity(0.1),
+        color: AppColorLight.button1.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: AppColorLight.button1.withOpacity(0.3),
@@ -198,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen>
       ),
       child: const Icon(
         Icons.shield_outlined,
-        size:  80,
+        size: 80,
         color: AppColorLight.button1,
       ),
     );
@@ -212,18 +203,18 @@ class _SplashScreenState extends State<SplashScreen>
         Text(
           'SECURE',
           style: AppTextStyles.displayM.copyWith(
-            color:         textPrimary,
+            color: textPrimary,
             letterSpacing: 6,
-            fontSize:      28,
+            fontSize: 28,
           ),
         ),
         const SizedBox(width: 8),
         Text(
           'MAIL',
           style: AppTextStyles.displayM.copyWith(
-            color:         accentColor,
+            color: accentColor,
             letterSpacing: 6,
-            fontSize:      28,
+            fontSize: 28,
           ),
         ),
       ],
@@ -251,17 +242,17 @@ class _SplashScreenState extends State<SplashScreen>
                 Text(
                   'SYSTEM INTEGRITY CHECK',
                   style: AppTextStyles.labelS.copyWith(
-                    color:         textSecondary,
+                    color: textSecondary,
                     letterSpacing: 1.5,
-                    fontSize:      10,
+                    fontSize: 10,
                   ),
                 ),
                 Text(
                   '$percent%',
                   style: AppTextStyles.labelS.copyWith(
-                    color:         textSecondary,
+                    color: textSecondary,
                     letterSpacing: 1,
-                    fontSize:      10,
+                    fontSize: 10,
                   ),
                 ),
               ],
@@ -272,10 +263,10 @@ class _SplashScreenState extends State<SplashScreen>
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
               child: LinearProgressIndicator(
-                value:            _progressAnim.value,
-                backgroundColor:  progressBg,
-                valueColor:       AlwaysStoppedAnimation<Color>(accentColor),
-                minHeight:        3,
+                value: _progressAnim.value,
+                backgroundColor: progressBg,
+                valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                minHeight: 3,
               ),
             ),
             const SizedBox(height: AppSpacing.x3),
@@ -286,16 +277,16 @@ class _SplashScreenState extends State<SplashScreen>
               children: [
                 Icon(
                   Icons.fingerprint,
-                  size:  14,
+                  size: 14,
                   color: textSecondary,
                 ),
                 const SizedBox(width: AppSpacing.x2),
                 Text(
                   _statusText,
                   style: AppTextStyles.labelS.copyWith(
-                    color:         textSecondary,
+                    color: textSecondary,
                     letterSpacing: 1.5,
-                    fontSize:      10,
+                    fontSize: 10,
                   ),
                 ),
               ],

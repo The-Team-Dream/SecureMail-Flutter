@@ -90,7 +90,7 @@ class AppTextStyles {
   /// 15px · Medium — Buttons
   static const TextStyle labelL = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: FontWeight.w500,
     height: 1.0,
   );
