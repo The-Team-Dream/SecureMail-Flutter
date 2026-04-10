@@ -9,38 +9,45 @@ import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/utils/validators.dart';
 import 'package:securemail/features/auth/providers/auth_provider.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey      = GlobalKey<FormState>();
-  final _emailCtrl    = TextEditingController();
-  final _passwordCtrl = TextEditingController();
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
+  final _formKey         = GlobalKey<FormState>();
+  final _usernameCtrl    = TextEditingController();
+  final _emailCtrl       = TextEditingController();
+  final _passwordCtrl    = TextEditingController();
+  final _confirmPassCtrl = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _rememberMe      = false;
+  bool _obscurePassword        = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
+    _usernameCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _confirmPassCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final success = await ref.read(authProvider.notifier).login(
-      email:    _emailCtrl.text.trim(),
-      password: _passwordCtrl.text,
+    final success = await ref.read(authProvider.notifier).register(
+      email:           _emailCtrl.text.trim(),
+      password:        _passwordCtrl.text,
+      confirmPassword: _confirmPassCtrl.text,
+      username:        _usernameCtrl.text.trim(),
     );
 
     if (success && mounted) {
-      context.go(AppRoutes.dashboard);
+      // بنبعت الـ email للـ OTP screen عشان يستخدمه في الـ verify
+      context.push(AppRoutes.otp, extra: _emailCtrl.text.trim());
     }
   }
 
@@ -81,21 +88,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     _buildLogo(),
                     _buildTitle(),
                     const SizedBox(height: AppSpacing.x8),
-                    _buildSocialButtons(),
-                    const SizedBox(height: AppSpacing.x5),
-                    _buildDivider(),
+                    _buildUsernameField(),
                     const SizedBox(height: AppSpacing.x4),
                     _buildEmailField(),
                     const SizedBox(height: AppSpacing.x4),
                     _buildPasswordField(),
                     const SizedBox(height: AppSpacing.x4),
-                    _buildRememberMe(),
+                    _buildConfirmPasswordField(),
                     if (error != null) ...[
                       const SizedBox(height: AppSpacing.x3),
                       _buildError(error),
                     ],
                     const SizedBox(height: AppSpacing.x5),
-                    _buildSignInButton(isLoading),
+                    _buildRegisterButton(isLoading),
+                    const SizedBox(height: AppSpacing.x4),
+                    _buildPrivacyPolicy(),
                     const SizedBox(height: AppSpacing.x5),
                     _buildFooter(),
                   ],
@@ -127,69 +134,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Column(
       children: [
         const SizedBox(height: AppSpacing.x4),
-        Center(child: Text('Welcome Back', style: AppTextStyles.displayS.copyWith(color: _text1))),
+        Center(child: Text('Create Account', style: AppTextStyles.displayS.copyWith(color: _text1))),
         const SizedBox(height: AppSpacing.x2),
-        Center(child: Text('Log in to your encrypted inbox', style: AppTextStyles.bodyM.copyWith(color: _text3))),
-      ],
-    );
-  }
-
-  // ── Social Buttons ────────────────────────────────────────
-  Widget _buildSocialButtons() {
-    return Row(
-      children: [
-        Expanded(child: _socialButton(
-          label: 'Google',
-          icon:  const Icon(Icons.g_mobiledata, size: 20, color: Color(0xFF4285F4)),
-          onTap: () { /* TODO: Google OAuth */ },
-        )),
-        const SizedBox(width: AppSpacing.x3),
-        Expanded(child: _socialButton(
-          label: 'Outlook',
-          icon:  Icon(Icons.email, size: 20, color: _text1),
-          onTap: () { /* TODO: Outlook OAuth */ },
-        )),
-      ],
-    );
-  }
-
-  Widget _socialButton({required String label, required Widget icon, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: AppSize.buttonHeightM,
-        decoration: BoxDecoration(
-          color:        _fieldBackground,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border:       Border.all(color: _fieldBorder),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(width: AppSpacing.x2),
-            Text(label, style: AppTextStyles.labelM.copyWith(color: _text1)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── Divider ───────────────────────────────────────────────
-  Widget _buildDivider() {
-    return Row(
-      children: [
-        Expanded(child: Divider(color: _fieldBorder.withOpacity(0.6))),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x3),
-          child: Text('OR CONTINUE WITH', style: AppTextStyles.labelS.copyWith(color: _text3)),
-        ),
-        Expanded(child: Divider(color: _fieldBorder.withOpacity(0.6))),
+        Center(child: Text('Secure your inbox today', style: AppTextStyles.bodyM.copyWith(color: _text3))),
       ],
     );
   }
 
   // ── Fields ────────────────────────────────────────────────
+  Widget _buildUsernameField() {
+    return TextFormField(
+      controller:      _usernameCtrl,
+      textInputAction: TextInputAction.next,
+      style:           AppTextStyles.inputText.copyWith(color: _fieldText),
+      decoration:      _inputDecoration('Username', Icons.person_outline),
+      validator:       Validators.name,
+    );
+  }
+
   Widget _buildEmailField() {
     return TextFormField(
       controller:      _emailCtrl,
@@ -197,19 +159,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       autocorrect:     false,
       textInputAction: TextInputAction.next,
       style:           AppTextStyles.inputText.copyWith(color: _fieldText),
-      decoration:      _inputDecoration('Email'),
+      decoration:      _inputDecoration('Email', Icons.email_outlined),
       validator:       Validators.email,
     );
   }
 
   Widget _buildPasswordField() {
     return TextFormField(
-      controller:       _passwordCtrl,
-      obscureText:      _obscurePassword,
-      textInputAction:  TextInputAction.done,
-      onFieldSubmitted: (_) => _submit(),
-      style:            AppTextStyles.inputText.copyWith(color: _fieldText),
-      decoration: _inputDecoration('Password').copyWith(
+      controller:      _passwordCtrl,
+      obscureText:     _obscurePassword,
+      textInputAction: TextInputAction.next,
+      style:           AppTextStyles.inputText.copyWith(color: _fieldText),
+      decoration: _inputDecoration('Password', Icons.lock_outline).copyWith(
         suffixIcon: GestureDetector(
           onTap: () => setState(() => _obscurePassword = !_obscurePassword),
           child: Icon(
@@ -222,31 +183,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // ── Remember Me ───────────────────────────────────────────
-  Widget _buildRememberMe() {
-    return Row(
-      children: [
-        SizedBox(
-          width: 18, height: 18,
-          child: Checkbox(
-            value:       _rememberMe,
-            onChanged:   (val) => setState(() => _rememberMe = val ?? false),
-            activeColor: _button1,
-            side:        BorderSide(color: _fieldBorder, width: 1.5),
-            shape:       RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xs)),
+  Widget _buildConfirmPasswordField() {
+    return TextFormField(
+      controller:       _confirmPassCtrl,
+      obscureText:      _obscureConfirmPassword,
+      textInputAction:  TextInputAction.done,
+      onFieldSubmitted: (_) => _submit(),
+      style:            AppTextStyles.inputText.copyWith(color: _fieldText),
+      decoration: _inputDecoration('Confirm Password', Icons.lock_outline).copyWith(
+        suffixIcon: GestureDetector(
+          onTap: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+          child: Icon(
+            _obscureConfirmPassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+            size: AppIconSize.sm, color: _fieldPlaceholder,
           ),
         ),
-        const SizedBox(width: AppSpacing.x2),
-        GestureDetector(
-          onTap: () => setState(() => _rememberMe = !_rememberMe),
-          child: Text('Remember me for 30 days', style: AppTextStyles.bodyS.copyWith(color: _text3)),
-        ),
-        const Spacer(),
-        GestureDetector(
-          onTap: () => context.push(AppRoutes.forgotPassword),
-          child: Text('Forgot password?', style: AppTextStyles.bodyS.copyWith(color: _text4)),
-        ),
-      ],
+      ),
+      validator: Validators.confirmPassword(_passwordCtrl.text),
     );
   }
 
@@ -269,8 +222,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // ── Sign In Button ────────────────────────────────────────
-  Widget _buildSignInButton(bool isLoading) {
+  // ── Register Button ───────────────────────────────────────
+  Widget _buildRegisterButton(bool isLoading) {
     return SizedBox(
       width: double.infinity,
       height: AppSize.buttonHeightL,
@@ -281,7 +234,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         child: isLoading
             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text('Sign in', style: AppTextStyles.labelL.copyWith(color: Colors.white)),
+            : Text('Create Account', style: AppTextStyles.labelL.copyWith(color: Colors.white)),
+      ),
+    );
+  }
+
+  // ── Privacy Policy ────────────────────────────────────────
+  Widget _buildPrivacyPolicy() {
+    return Center(
+      child: RichText(
+        textAlign: TextAlign.center,
+        text: TextSpan(
+          style: AppTextStyles.bodyS.copyWith(color: _text3),
+          children: [
+            const TextSpan(text: 'By creating an account, you agree to our '),
+            WidgetSpan(
+              child: GestureDetector(
+                onTap: () { /* TODO: Privacy Policy Screen */ },
+                child: Text(
+                  'Privacy Policy',
+                  style: AppTextStyles.bodyS.copyWith(
+                    color:           _text4,
+                    fontWeight:      FontWeight.w600,
+                    decoration:      TextDecoration.underline,
+                    decorationColor: _text4,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -293,11 +275,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         text: TextSpan(
           style: AppTextStyles.bodyS.copyWith(color: _text3),
           children: [
-            const TextSpan(text: "Don't have an account? "),
+            const TextSpan(text: 'Already have an account? '),
             WidgetSpan(
               child: GestureDetector(
-                onTap: () => context.push(AppRoutes.register),
-                child: Text('Sign up', style: AppTextStyles.bodyS.copyWith(fontWeight: FontWeight.w600, color: _text4)),
+                onTap: () => context.pop(),
+                child: Text('Log in', style: AppTextStyles.bodyS.copyWith(fontWeight: FontWeight.w600, color: _text4)),
               ),
             ),
           ],
@@ -307,12 +289,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ── Input Decoration ──────────────────────────────────────
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(String hint, IconData prefixIcon) {
     return InputDecoration(
-      hintText:  hint,
-      hintStyle: AppTextStyles.inputPlaceholder.copyWith(color: _fieldPlaceholder),
-      filled:    true,
-      fillColor: _fieldBackground,
+      hintText:    hint,
+      hintStyle:   AppTextStyles.inputPlaceholder.copyWith(color: _fieldPlaceholder),
+      prefixIcon:  Icon(prefixIcon, size: AppIconSize.md, color: _fieldPlaceholder),
+      filled:      true,
+      fillColor:   _fieldBackground,
       contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.fieldPaddingH, vertical: AppSpacing.fieldPaddingV),
       border:             OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: _fieldBorder)),
       enabledBorder:      OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: _fieldBorder)),
