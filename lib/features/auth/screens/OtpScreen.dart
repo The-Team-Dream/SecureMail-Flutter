@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:securemail/core/router/app_router.dart';
-import 'package:securemail/core/theme/app_color/AppColorLight.dart';
-import 'package:securemail/core/theme/app_color/AppColorDark.dart';
+import 'package:go_router/go_router.dart';import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
+import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/auth/providers/otp_provider.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
@@ -48,16 +46,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     await ref.read(otpProvider.notifier).resendOtp(email: widget.email);
   }
 
-  // ── Colors ────────────────────────────────────────────────
-  bool  get _isDark           => Theme.of(context).brightness == Brightness.dark;
-  Color get _background       => _isDark ? AppColorDark.background       : AppColorLight.background;
-  Color get _text1            => _isDark ? AppColorDark.text1            : AppColorLight.text1;
-  Color get _text3            => _isDark ? AppColorDark.text3            : AppColorLight.text3;
-  Color get _text4            => _isDark ? AppColorDark.text4            : AppColorLight.text4;
-  Color get _button1          => _isDark ? AppColorDark.button1          : AppColorLight.button1;
-  Color get _fieldBackground  => _isDark ? AppColorDark.fieldBackground  : AppColorLight.fieldBackground;
-  Color get _fieldBorder      => _isDark ? AppColorDark.fieldBorder      : AppColorLight.fieldBorder;
-
   @override
   Widget build(BuildContext context) {
     final otpState      = ref.watch(otpProvider);
@@ -67,11 +55,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     final resendSuccess = otpState.resendSuccess;
 
     return Scaffold(
-      backgroundColor: _background,
+      backgroundColor: context.bgColor,
       appBar: AppBar(
-        backgroundColor: _background,
+        backgroundColor: context.bgColor,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, size: 20, color: _text1),
+          icon: Icon(Icons.arrow_back_ios, size: 20, color: context.text1),
           onPressed: () => context.pop(),
         ),
       ),
@@ -91,26 +79,26 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   Container(
                     width: 80, height: 80,
                     decoration: BoxDecoration(
-                      color:        _button1.withOpacity(0.1),
+                      color:        context.button1.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(AppRadius.xl),
-                      border:       Border.all(color: _button1.withOpacity(0.3)),
+                      border:       Border.all(color: context.button1.withOpacity(0.3)),
                     ),
-                    child: Icon(Icons.mark_email_read_outlined, size: 40, color: _button1),
+                    child: Icon(Icons.mark_email_read_outlined, size: 40, color: context.button1),
                   ),
                   const SizedBox(height: AppSpacing.x6),
 
                   // Title
-                  Text('Verify your email', style: AppTextStyles.displayS.copyWith(color: _text1)),
+                  Text('Verify your email', style: AppTextStyles.displayS.copyWith(color: context.text1)),
                   const SizedBox(height: AppSpacing.x2),
                   Text(
                     'We sent a 6-digit code to',
-                    style: AppTextStyles.bodyM.copyWith(color: _text3),
+                    style: AppTextStyles.bodyM.copyWith(color: context.text3),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.x1),
                   Text(
                     widget.email,
-                    style: AppTextStyles.bodyM.copyWith(color: _button1, fontWeight: FontWeight.w600),
+                    style: AppTextStyles.bodyM.copyWith(color: context.button1, fontWeight: FontWeight.w600),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: AppSpacing.x8),
@@ -161,14 +149,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
             keyboardType:  TextInputType.number,
             textAlign:     TextAlign.center,
             maxLength:     1,
-            style:         AppTextStyles.headingL.copyWith(color: _text1),
+            style:         AppTextStyles.headingL.copyWith(color: context.text1),
             decoration: InputDecoration(
               counterText: '',
               filled:      true,
-              fillColor:   _fieldBackground,
-              border:           OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: _fieldBorder)),
-              enabledBorder:    OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: _fieldBorder)),
-              focusedBorder:    OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: _button1, width: 2)),
+              fillColor:   context.fieldBg,
+              border:           OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: context.fieldBorder)),
+              enabledBorder:    OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: context.fieldBorder)),
+              focusedBorder:    OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md), borderSide: BorderSide(color: context.button1, width: 2)),
             ),
             onChanged: (val) {
               if (val.isNotEmpty && i < 5) {
@@ -176,7 +164,6 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
               } else if (val.isEmpty && i > 0) {
                 _focusNodes[i - 1].requestFocus();
               }
-              // لو اكتمل الـ OTP بيعمل submit تلقائي
               if (_otp.length == 6) _submit();
             },
           ),
@@ -209,15 +196,15 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.x3),
       decoration: BoxDecoration(
-        color:        _button1.withOpacity(0.1),
+        color:        context.button1.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border:       Border.all(color: _button1.withOpacity(0.3)),
+        border:       Border.all(color: context.button1.withOpacity(0.3)),
       ),
       child: Row(
         children: [
-          Icon(Icons.check_circle_outline, size: 16, color: _button1),
+          Icon(Icons.check_circle_outline, size: 16, color: context.button1),
           const SizedBox(width: AppSpacing.x2),
-          Expanded(child: Text(message, style: AppTextStyles.bodyS.copyWith(color: _button1))),
+          Expanded(child: Text(message, style: AppTextStyles.bodyS.copyWith(color: context.button1))),
         ],
       ),
     );
@@ -245,12 +232,12 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text("Didn't receive the code? ", style: AppTextStyles.bodyS.copyWith(color: _text3)),
+        Text("Didn't receive the code? ", style: AppTextStyles.bodyS.copyWith(color: context.text3)),
         GestureDetector(
           onTap: isResending ? null : _resend,
           child: isResending
-              ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: _button1))
-              : Text('Resend', style: AppTextStyles.bodyS.copyWith(fontWeight: FontWeight.w600, color: _text4)),
+              ? SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: context.button1))
+              : Text('Resend', style: AppTextStyles.bodyS.copyWith(fontWeight: FontWeight.w600, color: context.text4)),
         ),
       ],
     );

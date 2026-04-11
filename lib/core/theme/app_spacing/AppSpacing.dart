@@ -16,7 +16,7 @@ class AppSpacing {
   static const double x16 = 64.0;
 
   // ── Screen Padding ────────────────────────────────────────
-  static const double screenHorizontal = 20.0;
+  static const double screenHorizontal = 14.0;
   static const double screenVertical   = 16.0;
 
   // ── Card ──────────────────────────────────────────────────

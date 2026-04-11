@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:securemail/core/theme/app_color/AppColorLight.dart';
-import 'package:securemail/core/theme/app_color/AppColorDark.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
+import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 
@@ -33,7 +32,6 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
 
-    // Fade in
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -41,7 +39,6 @@ class _SplashScreenState extends State<SplashScreen>
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
     _fadeCtrl.forward();
 
-    // Progress bar
     _progressCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
@@ -54,7 +51,6 @@ class _SplashScreenState extends State<SplashScreen>
     _progressCtrl.addListener(_updateStatus);
     _progressCtrl.forward();
 
-    // Navigate after animation
     _progressCtrl.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _navigateNext();
@@ -89,17 +85,23 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final bgColor = isDark ? AppColorDark.background : AppColorLight.background;
-    final textPrimary = isDark ? AppColorDark.text1 : AppColorLight.text1;
-    final textSecondary = isDark ? AppColorDark.text3 : AppColorLight.text3;
-    final accentColor = isDark ? AppColorDark.button1 : AppColorLight.button1;
-    final progressBg = isDark ? AppColorDark.card2 : AppColorLight.card2;
-
     return Scaffold(
-      backgroundColor: bgColor,
-      body: FadeTransition(
+      
+      body: Container(
+      decoration: BoxDecoration(
+  gradient: LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: context.isDark
+        ?  [
+                  const Color.fromARGB(255, 3, 13, 10),
+                  const Color.fromARGB(136, 17, 52, 43),
+                  const Color.fromARGB(181, 17, 52, 43)
+                ]
+        : [const Color(0xFFF2FBF7), const Color(0xFFE8F6F2), const Color(0xFFF2FBF7)],
+        
+  ),
+),child:  FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
           child: Padding(
@@ -114,19 +116,14 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
                       _buildLogo(),
                       const SizedBox(height: AppSpacing.x8),
-
-                      // SECURE MAIL
-                      _buildAppName(accentColor, textPrimary),
+                      _buildAppName(),
                       const SizedBox(height: AppSpacing.x2),
-
-                      // Subtitle
                       Text(
                         'QUANTUM-ENCRYPTED MESSAGING',
                         style: AppTextStyles.labelS.copyWith(
-                          color: textSecondary,
+                          color: context.text3,
                           letterSpacing: 2.5,
                           fontSize: 11,
                         ),
@@ -141,11 +138,7 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      _buildProgressSection(
-                        accentColor: accentColor,
-                        progressBg: progressBg,
-                        textSecondary: textSecondary,
-                      ),
+                      _buildProgressSection(),
                       const SizedBox(height: AppSpacing.x8),
                     ],
                   ),
@@ -155,7 +148,7 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         ),
       ),
-    );
+    ));
   }
 
   // ── Logo ───────────────────────────────────────────────────
@@ -167,7 +160,7 @@ class _SplashScreenState extends State<SplashScreen>
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Image.asset(
-        'assets/images/logo.png',
+        'assets/images/splash.png',
         fit: BoxFit.contain,
         errorBuilder: (_, __, ___) => _buildFallbackLogo(),
       ),
@@ -175,35 +168,34 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildFallbackLogo() {
-    // لو الصورة مش موجودة بيعرض placeholder
     return Container(
       width: 160,
       height: 160,
       decoration: BoxDecoration(
-        color: AppColorLight.button1.withOpacity(0.1),
+        color: context.button1.withOpacity(0.1),
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
-          color: AppColorLight.button1.withOpacity(0.3),
+          color: context.button1.withOpacity(0.3),
           width: 2,
         ),
       ),
-      child: const Icon(
+      child: Icon(
         Icons.shield_outlined,
         size: 80,
-        color: AppColorLight.button1,
+        color: context.button1,
       ),
     );
   }
 
   // ── App Name ───────────────────────────────────────────────
-  Widget _buildAppName(Color accentColor, Color textPrimary) {
+  Widget _buildAppName() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           'SECURE',
           style: AppTextStyles.displayM.copyWith(
-            color: textPrimary,
+            color: context.text1,
             letterSpacing: 6,
             fontSize: 28,
           ),
@@ -212,7 +204,7 @@ class _SplashScreenState extends State<SplashScreen>
         Text(
           'MAIL',
           style: AppTextStyles.displayM.copyWith(
-            color: accentColor,
+            color: context.button1,
             letterSpacing: 6,
             fontSize: 28,
           ),
@@ -222,11 +214,7 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   // ── Progress Section ───────────────────────────────────────
-  Widget _buildProgressSection({
-    required Color accentColor,
-    required Color progressBg,
-    required Color textSecondary,
-  }) {
+  Widget _buildProgressSection() {
     return AnimatedBuilder(
       animation: _progressAnim,
       builder: (_, __) {
@@ -235,14 +223,13 @@ class _SplashScreenState extends State<SplashScreen>
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Label + Percentage
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'SYSTEM INTEGRITY CHECK',
                   style: AppTextStyles.labelS.copyWith(
-                    color: textSecondary,
+                    color: context.text3,
                     letterSpacing: 1.5,
                     fontSize: 10,
                   ),
@@ -250,7 +237,7 @@ class _SplashScreenState extends State<SplashScreen>
                 Text(
                   '$percent%',
                   style: AppTextStyles.labelS.copyWith(
-                    color: textSecondary,
+                    color: context.text3,
                     letterSpacing: 1,
                     fontSize: 10,
                   ),
@@ -259,32 +246,30 @@ class _SplashScreenState extends State<SplashScreen>
             ),
             const SizedBox(height: AppSpacing.x2),
 
-            // Progress Bar
             ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
               child: LinearProgressIndicator(
                 value: _progressAnim.value,
-                backgroundColor: progressBg,
-                valueColor: AlwaysStoppedAnimation<Color>(accentColor),
+                backgroundColor: context.card2,
+                valueColor: AlwaysStoppedAnimation<Color>(context.button1),
                 minHeight: 3,
               ),
             ),
             const SizedBox(height: AppSpacing.x3),
 
-            // Status Text
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
                   Icons.fingerprint,
                   size: 14,
-                  color: textSecondary,
+                  color: context.text3,
                 ),
                 const SizedBox(width: AppSpacing.x2),
                 Text(
                   _statusText,
                   style: AppTextStyles.labelS.copyWith(
-                    color: textSecondary,
+                    color: context.text3,
                     letterSpacing: 1.5,
                     fontSize: 10,
                   ),

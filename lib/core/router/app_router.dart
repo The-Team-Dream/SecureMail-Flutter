@@ -60,7 +60,7 @@ final appRouter = GoRouter(
     // ── Dashboard ─────────────────────────────────────────────
     GoRoute(
       path:    AppRoutes.dashboard,
-      builder: (_, __) => const DashboardScreen(),
+      builder: (_, __) => const NavbarRoots(),
     ),
   ],
 

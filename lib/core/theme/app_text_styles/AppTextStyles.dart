@@ -30,7 +30,7 @@ class AppTextStyles {
   /// 24px · SemiBold — Card headers
   static const TextStyle displayS = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 24,
+    fontSize: 27,
     fontWeight: FontWeight.w600,
     height: 1.3,
     letterSpacing: -0.2,
@@ -81,7 +81,7 @@ class AppTextStyles {
   /// 13px · Regular — Metadata, timestamps
   static const TextStyle bodyS = TextStyle(
     fontFamily: _fontFamily,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: FontWeight.w400,
     height: 1.45,
   );
