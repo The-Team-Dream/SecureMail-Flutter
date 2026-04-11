@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:securemail/features/auth/screens/settingScreen.dart';
+import 'package:securemail/features/settings/screens/SettingsScreen.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
+import 'package:securemail/features/analytics/screens/AnalyticsScreen.dart';
+import 'package:securemail/features/profile/screens/ProfileScreen.dart';
+import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
 
 class NavbarRoots extends StatefulWidget {
   const NavbarRoots({super.key});
@@ -13,13 +16,13 @@ class NavbarRoots extends StatefulWidget {
 class _NavbarRootsState extends State<NavbarRoots> {
   int selectedIndex = 0;
 
-  final screens = [
-    const SettingsScreen(), // Profile
-    const SettingsScreen(), // Analytics
-    const Mailboxesscreen(), // Mailboxes
-    const SettingsScreen(), // Alerts
-    const SettingsScreen(), // Settings
-  ];
+ final screens = [
+  const Profilescreen(),   // Profile
+  const Analyticsscreen(), // Analytics  
+  const Mailboxesscreen(), // Mailboxes
+  const Alertsscreen(),    // Alerts
+  const Settingsscreen(),  // Settings
+];
 
   @override
   Widget build(BuildContext context) {
