@@ -1,30 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 
-class Settingsscreen extends ConsumerStatefulWidget {
+class Settingsscreen extends StatefulWidget {
   const Settingsscreen({super.key});
 
   @override
-  ConsumerState<Settingsscreen> createState() => _SettingsscreenState();
+  State<Settingsscreen> createState() => _SettingsscreenState();
 }
 
-class _SettingsscreenState extends ConsumerState<Settingsscreen> {
+class _SettingsscreenState extends State<Settingsscreen> {
   bool _darkMode = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      appBar:  AppBar(
-  leading: IconButton(
-    icon: Icon(Icons.arrow_back, color: context.text1),
-    onPressed: () => Navigator.pop(context),
-  ),
-  title: const Text('Settings'),
-),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: const Text('Settings'),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.screenHorizontal,
@@ -33,7 +29,6 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Personal ──────────────────────────────────
             _buildSectionLabel('PERSONAL'),
             const SizedBox(height: AppSpacing.x2),
             _buildCard(
@@ -183,9 +178,13 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: AppTextStyles.bodyM.copyWith(color: context.text1, fontWeight: FontWeight.w500)),
+                  Text(title,
+                      style: AppTextStyles.bodyM.copyWith(
+                          color: context.text1, fontWeight: FontWeight.w500)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: AppTextStyles.bodyS.copyWith(color: context.text3)),
+                  Text(subtitle,
+                      style:
+                          AppTextStyles.bodyS.copyWith(color: context.text3)),
                 ],
               ),
             ),
@@ -217,9 +216,12 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: AppTextStyles.bodyM.copyWith(color: context.text1, fontWeight: FontWeight.w500)),
+                Text(title,
+                    style: AppTextStyles.bodyM.copyWith(
+                        color: context.text1, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: AppTextStyles.bodyS.copyWith(color: context.text3)),
+                Text(subtitle,
+                    style: AppTextStyles.bodyS.copyWith(color: context.text3)),
               ],
             ),
           ),
@@ -279,16 +281,21 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
               color: const Color(0xFFE24B4A).withOpacity(0.15),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
-            child: const Icon(Icons.delete_outline, color: Color(0xFFE24B4A), size: 20),
+            child: const Icon(Icons.delete_outline,
+                color: Color(0xFFE24B4A), size: 20),
           ),
           const SizedBox(width: AppSpacing.x3),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Clear Cache', style: AppTextStyles.bodyM.copyWith(color: const Color(0xFFE24B4A), fontWeight: FontWeight.w500)),
+                Text('Clear Cache',
+                    style: AppTextStyles.bodyM.copyWith(
+                        color: const Color(0xFFE24B4A),
+                        fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
-                Text('124 MB of temporary data', style: AppTextStyles.bodyS.copyWith(color: context.text3)),
+                Text('124 MB of temporary data',
+                    style: AppTextStyles.bodyS.copyWith(color: context.text3)),
               ],
             ),
           ),
@@ -297,10 +304,16 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFE24B4A),
               side: const BorderSide(color: Color(0xFFE24B4A)),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x4, vertical: AppSpacing.x2),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.x4, vertical: AppSpacing.x2),
+              minimumSize: Size.zero, // ← أضف السطر ده
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ←
             ),
-            child: Text('Clear', style: AppTextStyles.labelS.copyWith(color: const Color(0xFFE24B4A))),
+            child: Text('Clear',
+                style: AppTextStyles.labelS
+                    .copyWith(color: const Color(0xFFE24B4A))),
           ),
         ],
       ),
@@ -314,7 +327,8 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
         // Secure Protocol Badge
         Center(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.x4, vertical: AppSpacing.x2),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.x4, vertical: AppSpacing.x2),
             decoration: BoxDecoration(
               border: Border.all(color: context.button1.withOpacity(0.5)),
               borderRadius: BorderRadius.circular(20),
@@ -323,8 +337,10 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 6, height: 6,
-                  decoration: BoxDecoration(color: context.button1, shape: BoxShape.circle),
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                      color: context.button1, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: AppSpacing.x2),
                 Text(
@@ -339,7 +355,6 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
             ),
           ),
         ),
-      
       ],
     );
   }
