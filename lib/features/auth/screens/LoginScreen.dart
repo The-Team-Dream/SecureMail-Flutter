@@ -7,6 +7,10 @@ import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/utils/validators.dart';
 import 'package:securemail/features/auth/providers/auth_provider.dart';
+import 'package:securemail/shared/widgets/app_border_outline.dart';
+import 'package:securemail/shared/widgets/app_error_banner.dart';
+import 'package:securemail/shared/widgets/app_primary_button.dart';
+import 'package:securemail/shared/widgets/auth_gradient_background.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -50,25 +54,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final error = authState.error;
 
     return Scaffold(
-        body: Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          
-          colors: context.isDark
-              ? [
-                  const Color.fromARGB(181, 17, 52, 43),
-                  const Color.fromARGB(255, 3, 13, 10),
-                  const Color.fromARGB(136, 17, 52, 43)
-                ]
-              : [
-                  const Color(0xFFF2FBF7),
-                  const Color(0xFFE8F6F2),
-                  const Color(0xFFF2FBF7)
-                ],
-        ),
-      ),
+        body: AuthGradientBackground(
       child: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -97,10 +83,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     _buildRememberMe(),
                     if (error != null) ...[
                       const SizedBox(height: AppSpacing.x3),
-                      _buildError(error),
+                      AppErrorBanner(message: error),
                     ],
                     const SizedBox(height: AppSpacing.x5),
-                    _buildSignInButton(isLoading),
+                    AppPrimaryButton(
+                      label: 'Sign in',
+                      onPressed: _submit,
+                      isLoading: isLoading,
+                    ),
                     const SizedBox(height: AppSpacing.x5),
                     _buildFooter(),
                     const SizedBox(height: AppSpacing.x12),
@@ -134,15 +124,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget _buildTitle() {
     return Column(
       children: [
-        
         Center(
             child: Text('Welcome Back',
                 style: AppTextStyles.displayS.copyWith(color: context.text1))),
-        
         Center(
             child: Text('Log in to your encrypted inbox',
                 style: AppTextStyles.bodyM.copyWith(color: context.text3))),
-                const SizedBox(height: AppSpacing.x16),
+        const SizedBox(height: AppSpacing.x16),
       ],
     );
   }
@@ -218,7 +206,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       autocorrect: false,
       textInputAction: TextInputAction.next,
       style: AppTextStyles.inputText.copyWith(color: context.fieldText),
-      decoration: _inputDecoration('Email'),
+      decoration: appInputDecoration(context, 'Email'),
       validator: Validators.email,
     );
   }
@@ -230,7 +218,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       textInputAction: TextInputAction.done,
       onFieldSubmitted: (_) => _submit(),
       style: AppTextStyles.inputText.copyWith(color: context.fieldText),
-      decoration: _inputDecoration('Password').copyWith(
+      decoration: appInputDecoration(context, 'Password').copyWith(
         suffixIcon: GestureDetector(
           onTap: () => setState(() => _obscurePassword = !_obscurePassword),
           child: Icon(
@@ -278,50 +266,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────
-  Widget _buildError(String error) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.x3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE24B4A).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: const Color(0xFFE24B4A).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 16, color: Color(0xFFE24B4A)),
-          const SizedBox(width: AppSpacing.x2),
-          Expanded(
-              child: Text(error,
-                  style: AppTextStyles.bodyS
-                      .copyWith(color: const Color(0xFFE24B4A)))),
-        ],
-      ),
-    );
-  }
-
-  // ── Sign In Button ────────────────────────────────────────
-  Widget _buildSignInButton(bool isLoading) {
-    return SizedBox(
-      width: double.infinity,
-      height: AppSize.buttonHeightL,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
-            : Text('Sign in',
-                style: AppTextStyles.labelL.copyWith(color: Colors.white)),
-      ),
-    );
-  }
+  // ── Error → replaced by AppErrorBanner ──────────────────
+  // ── Sign In Button → replaced by AppPrimaryButton ────────
 
   // ── Footer ────────────────────────────────────────────────
   Widget _buildFooter() {
@@ -346,31 +292,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   // ── Input Decoration ──────────────────────────────────────
-  InputDecoration _inputDecoration(String hint) {
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTextStyles.inputPlaceholder
-          .copyWith(color: context.fieldPlaceholder),
-      filled: true,
-      fillColor: context.fieldBg,
-      contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.fieldPaddingH,
-          vertical: AppSpacing.fieldPaddingV),
-      border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: BorderSide(color: context.fieldBorder)),
-      enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: BorderSide(color: context.fieldBorder)),
-      focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: BorderSide(color: context.button1, width: 1.5)),
-      errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: const BorderSide(color: Color(0xFFE24B4A))),
-      focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          borderSide: const BorderSide(color: Color(0xFFE24B4A), width: 1.5)),
-    );
-  }
 }

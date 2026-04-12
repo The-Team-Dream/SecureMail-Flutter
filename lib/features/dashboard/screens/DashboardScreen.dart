@@ -1,37 +1,30 @@
 import 'package:flutter/material.dart';
-import 'package:securemail/features/settings/screens/SettingsScreen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
-import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
-import 'package:securemail/features/analytics/screens/AnalyticsScreen.dart';
-import 'package:securemail/features/profile/screens/ProfileScreen.dart';
-import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
 
-class NavbarRoots extends StatefulWidget {
-  const NavbarRoots({super.key});
+class NavbarRoots extends StatelessWidget {
+  const NavbarRoots({
+    super.key,
+    required this.navigationShell,
+  });
 
-  @override
-  State<NavbarRoots> createState() => _NavbarRootsState();
-}
+  final StatefulNavigationShell navigationShell;
 
-class _NavbarRootsState extends State<NavbarRoots> {
-  int selectedIndex = 0;
-
- final screens = [
-  const Profilescreen(),   // Profile
-  const Analyticsscreen(), // Analytics  
-  const Mailboxesscreen(), // Mailboxes
-  const Alertsscreen(),    // Alerts
-  const Settingsscreen(),  // Settings
-];
+  void _onTap(int index) {
+    navigationShell.goBranch(
+      index,
+      initialLocation: index == navigationShell.currentIndex,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      body: screens[selectedIndex],
+      body: navigationShell,
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: selectedIndex,
-        onTap: (index) => setState(() => selectedIndex = index),
+        currentIndex: navigationShell.currentIndex,
+        onTap: _onTap,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

@@ -29,7 +29,7 @@ ThemeData getThemeDark() {
 
     // ── AppBar ──────────────────────────────────────────────
     appBarTheme: AppBarTheme(
-      backgroundColor:    AppColorDark.background,
+      backgroundColor:    AppColorDark.barBackground,
       foregroundColor:    AppColorDark.text1,
       elevation:          0,
       scrolledUnderElevation: 0,

@@ -7,6 +7,15 @@ import 'package:securemail/features/auth/screens/ForgotPasswordScreen.dart';
 import 'package:securemail/features/auth/screens/OtpScreen.dart';
 import 'package:securemail/features/dashboard/screens/DashboardScreen.dart';
 
+import 'package:securemail/features/profile/screens/ProfileScreen.dart';
+import 'package:securemail/features/analytics/screens/AnalyticsScreen.dart';
+import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
+import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
+import 'package:securemail/features/settings/screens/ChangePasswordScreen.dart';
+import 'package:securemail/features/settings/screens/EditProfileScreen.dart';
+import 'package:securemail/features/settings/screens/SettingsScreen.dart';
+import 'package:securemail/features/settings/screens/TwoFactorScreen.dart';
+
 class AppRoutes {
   AppRoutes._();
 
@@ -16,7 +25,19 @@ class AppRoutes {
   static const register       = '/register';
   static const forgotPassword = '/forgot-password';
   static const otp            = '/otp';
-  static const dashboard      = '/dashboard';
+
+  // Dashboard Tabs
+  static const profile        = '/profile';
+  static const analytics      = '/analytics';
+  static const mailboxes      = '/mailboxes';
+  static const alerts         = '/alerts';
+  static const settings       = '/settings';
+  static const editProfile    = '/editProfile';
+  static const changePassword = '/changePassword';
+  static const twoFactorAuth  = '/twoFactorAuth';
+  
+  // Keep dashboard as an alias or just use mailboxes
+  static const dashboard      = mailboxes;
 }
 
 final appRouter = GoRouter(
@@ -48,7 +69,6 @@ final appRouter = GoRouter(
     ),
 
     // ── OTP ───────────────────────────────────────────────────
-    // بياخد email كـ extra عشان يبعته في الـ verify
     GoRoute(
       path: AppRoutes.otp,
       builder: (context, state) {
@@ -57,10 +77,70 @@ final appRouter = GoRouter(
       },
     ),
 
-    // ── Dashboard ─────────────────────────────────────────────
+    // ── Dashboard (StatefulShellRoute) ────────────────────────
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return NavbarRoots(navigationShell: navigationShell);
+      },
+      branches: [
+        // 0: Profile
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.profile,
+              builder: (context, state) => const Profilescreen(),
+            ),
+          ],
+        ),
+        // 1: Analytics
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.analytics,
+              builder: (context, state) => const Analyticsscreen(),
+            ),
+          ],
+        ),
+        // 2: Mailboxes
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.mailboxes,
+              builder: (context, state) => const Mailboxesscreen(),
+            ),
+          ],
+        ),
+        // 3: Alerts
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.alerts,
+              builder: (context, state) => const Alertsscreen(),
+            ),
+          ],
+        ),
+        // 4: Settings
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.settings,
+              builder: (context, state) => const Settingsscreen(),
+            ),
+          ],
+        ),
+      ],
+    ),
     GoRoute(
-      path:    AppRoutes.dashboard,
-      builder: (_, __) => const NavbarRoots(),
+      path: AppRoutes.editProfile,
+      builder: (context, state) => const EditProfileScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.changePassword,
+      builder: (context, state) => const ChangePasswordScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.twoFactorAuth,
+      builder: (context, state) => const TwoFactorScreen(),
     ),
   ],
 

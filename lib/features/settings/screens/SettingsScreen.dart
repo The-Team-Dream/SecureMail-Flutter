@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
+import 'package:go_router/go_router.dart';
+import 'package:securemail/core/router/app_router.dart';
 
 class Settingsscreen extends StatefulWidget {
   const Settingsscreen({super.key});
@@ -37,7 +39,9 @@ class _SettingsscreenState extends State<Settingsscreen> {
                   icon: Icons.manage_accounts_outlined,
                   title: 'Edit Profile',
                   subtitle: 'Update your name and profile photo',
-                  onTap: () {},
+                  onTap: () {
+                    context.push(AppRoutes.editProfile);
+                  },
                 ),
               ],
             ),
@@ -68,14 +72,18 @@ class _SettingsscreenState extends State<Settingsscreen> {
                   icon: Icons.key_outlined,
                   title: 'Change Password',
                   subtitle: 'Last changed 3 months ago',
-                  onTap: () {},
+                  onTap: () {
+                    context.push(AppRoutes.changePassword);
+                  },
                 ),
                 _buildDivider(),
                 _buildNavItem(
                   icon: Icons.lock_outlined,
                   title: 'Two-Factor Auth',
                   subtitle: 'Enhanced account protection',
-                  onTap: () {},
+                  onTap: () {
+                    context.push(AppRoutes.twoFactorAuth);
+                  },
                 ),
               ],
             ),
@@ -148,8 +156,8 @@ class _SettingsscreenState extends State<Settingsscreen> {
   Widget _buildCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: context.card2,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: context.card1,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(color: context.fieldBorder.withOpacity(0.3)),
       ),
       child: Column(children: children),
@@ -229,9 +237,9 @@ class _SettingsscreenState extends State<Settingsscreen> {
             value: value,
             onChanged: onChanged,
             activeColor: context.button1,
-            activeTrackColor: context.button1.withOpacity(0.3),
+            activeTrackColor: context.button2.withOpacity(0.3),
             inactiveThumbColor: context.text3,
-            inactiveTrackColor: context.card3,
+            inactiveTrackColor: context.card2,
           ),
         ],
       ),
@@ -245,7 +253,7 @@ class _SettingsscreenState extends State<Settingsscreen> {
       height: 40,
       decoration: BoxDecoration(
         color: context.button1.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Icon(icon, color: context.button1, size: 20),
     );
@@ -268,7 +276,7 @@ class _SettingsscreenState extends State<Settingsscreen> {
         vertical: AppSpacing.x4,
       ),
       decoration: BoxDecoration(
-        color: context.card2,
+        color: context.card1,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: context.fieldBorder.withOpacity(0.3)),
       ),

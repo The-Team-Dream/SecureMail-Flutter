@@ -7,6 +7,8 @@ import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/utils/validators.dart';
 import 'package:securemail/features/auth/providers/auth_provider.dart';
+import 'package:securemail/shared/widgets/app_error_banner.dart';
+import 'package:securemail/shared/widgets/app_primary_button.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -125,37 +127,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
           if (error != null) ...[
             const SizedBox(height: AppSpacing.x3),
-            Container(
-              padding: const EdgeInsets.all(AppSpacing.x3),
-              decoration: BoxDecoration(
-                color:        const Color(0xFFE24B4A).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border:       Border.all(color: const Color(0xFFE24B4A).withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, size: 16, color: Color(0xFFE24B4A)),
-                  const SizedBox(width: AppSpacing.x2),
-                  Expanded(child: Text(error, style: AppTextStyles.bodyS.copyWith(color: const Color(0xFFE24B4A)))),
-                ],
-              ),
-            ),
+            AppErrorBanner(message: error),
           ],
 
           const SizedBox(height: AppSpacing.x5),
 
-          SizedBox(
-            width: double.infinity,
-            height: AppSize.buttonHeightL,
-            child: ElevatedButton(
-              onPressed: isLoading ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-              ),
-              child: isLoading
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Send Reset Link', style: AppTextStyles.labelL.copyWith(color: Colors.white)),
-            ),
+          AppPrimaryButton(
+            label:     'Send Reset Link',
+            onPressed: _submit,
+            isLoading: isLoading,
           ),
           const SizedBox(height: AppSpacing.x5),
 
@@ -206,16 +186,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         ),
         const SizedBox(height: AppSpacing.x8),
   
-        SizedBox(
-          width: double.infinity,
-          height: AppSize.buttonHeightL,
-          child: ElevatedButton(
-            onPressed: () => context.go(AppRoutes.login),
-            style: ElevatedButton.styleFrom(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-            ),
-            child: Text('Back to Login', style: AppTextStyles.labelL.copyWith(color: Colors.white)),
-          ),
+        AppPrimaryButton(
+          label:     'Back to Login',
+          onPressed: () => context.go(AppRoutes.login),
+          isLoading: false,
         ),
       ],
     );

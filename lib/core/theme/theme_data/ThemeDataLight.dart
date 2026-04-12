@@ -5,7 +5,7 @@ import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 
 ThemeData getThemeLight() {
-  const color = AppColorLight;
+  
 
   return ThemeData(
     useMaterial3: true,
@@ -30,7 +30,7 @@ ThemeData getThemeLight() {
 
     // ── AppBar ──────────────────────────────────────────────
     appBarTheme: AppBarTheme(
-      backgroundColor:    AppColorLight.background,
+      backgroundColor:    AppColorLight.barBackground,
       foregroundColor:    AppColorLight.text1,
       elevation:          0,
       scrolledUnderElevation: 0,

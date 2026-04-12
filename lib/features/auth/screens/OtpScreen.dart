@@ -5,6 +5,8 @@ import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/auth/providers/otp_provider.dart';
+import 'package:securemail/shared/widgets/app_error_banner.dart';
+import 'package:securemail/shared/widgets/app_primary_button.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   const OtpScreen({super.key, required this.email});
@@ -109,7 +111,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
                   // Error
                   if (error != null) ...[
-                    _buildError(error),
+                    AppErrorBanner(message: error),
                     const SizedBox(height: AppSpacing.x3),
                   ],
 
@@ -120,7 +122,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                   ],
 
                   // Verify Button
-                  _buildVerifyButton(isLoading),
+                  AppPrimaryButton(
+                    label:     'Verify Email',
+                    onPressed: _submit,
+                    isLoading: isLoading,
+                  ),
                   const SizedBox(height: AppSpacing.x5),
 
                   // Resend
@@ -133,6 +139,25 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       ),
     );
   }
+    // ── Success ───────────────────────────────────────────────
+  Widget _buildSuccess(String message) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.x3),
+      decoration: BoxDecoration(
+        color:        context.button1.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border:       Border.all(color: context.button1.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.check_circle_outline, size: 16, color: context.button1),
+          const SizedBox(width: AppSpacing.x2),
+          Expanded(child: Text(message, style: AppTextStyles.bodyS.copyWith(color: context.button1))),
+        ],
+      ),
+    );
+  }
+
 
   // ── OTP Fields ────────────────────────────────────────────
   Widget _buildOtpFields() {
@@ -172,60 +197,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────
-  Widget _buildError(String error) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.x3),
-      decoration: BoxDecoration(
-        color:        const Color(0xFFE24B4A).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border:       Border.all(color: const Color(0xFFE24B4A).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 16, color: Color(0xFFE24B4A)),
-          const SizedBox(width: AppSpacing.x2),
-          Expanded(child: Text(error, style: AppTextStyles.bodyS.copyWith(color: const Color(0xFFE24B4A)))),
-        ],
-      ),
-    );
-  }
+  // ── Error → replaced by AppErrorBanner ─────────────────
 
-  // ── Success ───────────────────────────────────────────────
-  Widget _buildSuccess(String message) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.x3),
-      decoration: BoxDecoration(
-        color:        context.button1.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border:       Border.all(color: context.button1.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle_outline, size: 16, color: context.button1),
-          const SizedBox(width: AppSpacing.x2),
-          Expanded(child: Text(message, style: AppTextStyles.bodyS.copyWith(color: context.button1))),
-        ],
-      ),
-    );
-  }
-
-  // ── Verify Button ─────────────────────────────────────────
-  Widget _buildVerifyButton(bool isLoading) {
-    return SizedBox(
-      width: double.infinity,
-      height: AppSize.buttonHeightL,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-        ),
-        child: isLoading
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text('Verify Email', style: AppTextStyles.labelL.copyWith(color: Colors.white)),
-      ),
-    );
-  }
+  // ── Verify Button → replaced by AppPrimaryButton ────────
 
   // ── Resend ────────────────────────────────────────────────
   Widget _buildResend(bool isResending) {

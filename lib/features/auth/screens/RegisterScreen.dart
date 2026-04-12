@@ -7,6 +7,8 @@ import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/utils/validators.dart';
 import 'package:securemail/features/auth/providers/auth_provider.dart';
+import 'package:securemail/shared/widgets/app_error_banner.dart';
+import 'package:securemail/shared/widgets/app_primary_button.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -99,12 +101,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     _buildConfirmPasswordField(),
                     if (error != null) ...[
                       const SizedBox(height: AppSpacing.x3),
-                      _buildError(error),
+                      AppErrorBanner(message: error),
                     ],
                     const SizedBox(height: AppSpacing.x1),
                     _buildPrivacyPolicy(),
                     const SizedBox(height: AppSpacing.x5),
-                    _buildRegisterButton(isLoading),
+                    AppPrimaryButton(
+                      label:     'Register',
+                      onPressed: _submit,
+                      isLoading: isLoading,
+                    ),
                     const SizedBox(height: AppSpacing.x5),
                     _buildFooter(),
                     const SizedBox(height: AppSpacing.x12),
@@ -226,50 +232,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 
-  // ── Error ─────────────────────────────────────────────────
-  Widget _buildError(String error) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.x3),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE24B4A).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: const Color(0xFFE24B4A).withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.error_outline, size: 16, color: Color(0xFFE24B4A)),
-          const SizedBox(width: AppSpacing.x2),
-          Expanded(
-              child: Text(error,
-                  style: AppTextStyles.bodyS
-                      .copyWith(color: const Color(0xFFE24B4A)))),
-        ],
-      ),
-    );
-  }
-
-  // ── Register Button ───────────────────────────────────────
-  Widget _buildRegisterButton(bool isLoading) {
-    return SizedBox(
-      width: double.infinity,
-      height: AppSize.buttonHeightL,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(32)),
-        ),
-        child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                    strokeWidth: 2, color: Colors.white))
-            : Text('Register',
-                style: AppTextStyles.labelL.copyWith(color: Colors.white)),
-      ),
-    );
-  }
+  // ── Error → replaced by AppErrorBanner ───────────────────
+  // ── Register Button → replaced by AppPrimaryButton ───────
 
   // ── Privacy Policy ────────────────────────────────────────
   Widget _buildPrivacyPolicy() {
