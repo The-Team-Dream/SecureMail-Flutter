@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:securemail/core/constants/ApiConstants.dart';
 import 'package:securemail/core/constants/AppConstants.dart';
-import 'package:securemail/core/errors/app_exceptions.dart';
+
 
 class JwtInterceptor extends Interceptor {
   JwtInterceptor(this._dio);

@@ -1,9 +1,12 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Settingsscreen extends StatefulWidget {
   const Settingsscreen({super.key});
@@ -98,7 +101,9 @@ class _SettingsscreenState extends State<Settingsscreen> {
                   icon: Icons.devices_outlined,
                   title: 'Logged in Devices',
                   subtitle: '3 active sessions detected',
-                  onTap: () {},
+                  onTap: () {
+                    context.push(AppRoutes.loggedInDevices);
+                  },
                 ),
               ],
             ),
@@ -113,14 +118,25 @@ class _SettingsscreenState extends State<Settingsscreen> {
                   icon: Icons.notifications_outlined,
                   title: 'Notifications',
                   subtitle: 'Push, Email, and Security alerts',
-                  onTap: () {},
+                  onTap: () {
+                    context.push(AppRoutes.notificationsSettings);
+                  },
                 ),
                 _buildDivider(),
                 _buildNavItem(
                   icon: Icons.security_outlined,
                   title: 'Privacy & Security',
                   subtitle: 'Encryption keys, Biometrics',
-                  onTap: () {},
+                  onTap: () async {
+                    const url =
+                        'https://www.youtube.com/watch?v=WlJUG-6UsQI&list=RD-jlaaizKuCA&index=2'; // ← هنا حط الـ URL
+                    if (await canLaunchUrl(Uri.parse(url))) {
+                      await launchUrl(
+                        Uri.parse(url),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
                 ),
               ],
             ),

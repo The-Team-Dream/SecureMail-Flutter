@@ -4,6 +4,7 @@ import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:securemail/shared/widgets/auth_gradient_background.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -87,21 +88,7 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       
-      body: Container(
-      decoration: BoxDecoration(
-  gradient: LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: context.isDark
-        ?  [
-                  const Color.fromARGB(255, 3, 13, 10),
-                  const Color.fromARGB(136, 17, 52, 43),
-                  const Color.fromARGB(181, 17, 52, 43)
-                ]
-        : [const Color(0xFFF2FBF7), const Color(0xFFE8F6F2), const Color(0xFFF2FBF7)],
-        
-  ),
-),child:  FadeTransition(
+      body:AuthGradientBackground(child:  FadeTransition(
         opacity: _fadeAnim,
         child: SafeArea(
           child: Padding(

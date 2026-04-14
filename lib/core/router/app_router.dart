@@ -13,6 +13,9 @@ import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
 import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
 import 'package:securemail/features/settings/screens/ChangePasswordScreen.dart';
 import 'package:securemail/features/settings/screens/EditProfileScreen.dart';
+import 'package:securemail/features/settings/screens/LoggedInDevicesScreen.dart';
+import 'package:securemail/features/settings/screens/NotificationsSettingsScreen.dart';
+import 'package:securemail/features/settings/screens/PrivacySecurityScreen.dart';
 import 'package:securemail/features/settings/screens/SettingsScreen.dart';
 import 'package:securemail/features/settings/screens/TwoFactorScreen.dart';
 
@@ -35,6 +38,9 @@ class AppRoutes {
   static const editProfile    = '/editProfile';
   static const changePassword = '/changePassword';
   static const twoFactorAuth  = '/twoFactorAuth';
+  static const loggedInDevices = '/loggedInDevices';
+  static const notificationsSettings = '/notificationsSettings';
+  static const privacySecurity = '/privacySecurity';
   
   // Keep dashboard as an alias or just use mailboxes
   static const dashboard      = mailboxes;
@@ -141,6 +147,18 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.twoFactorAuth,
       builder: (context, state) => const TwoFactorScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.loggedInDevices,
+      builder: (context, state) => const LoggedInDevicesScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.notificationsSettings,
+      builder: (context, state) => const NotificationsSettingsScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.privacySecurity,
+      builder: (context, state) => const PrivacySecurityScreen(),
     ),
   ],
 

@@ -1,6 +1,7 @@
 /// SecureMail — Mock Data
 /// بيانات وهمية بنفس شكل الـ API الحقيقي
 /// لما نربط الـ API بنحذف الملف ده ونغير الـ providers بس
+library;
 
 class MockData {
   MockData._();

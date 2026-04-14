@@ -41,14 +41,12 @@ class UnauthorizedException extends AppException {
 
 /// مش موجود
 class NotFoundException extends AppException {
-  const NotFoundException([String message = 'Resource not found.'])
-      : super(message);
+  const NotFoundException([super.message = 'Resource not found.']);
 }
 
 /// الـ request غلط
 class BadRequestException extends AppException {
-  const BadRequestException([String message = 'Invalid request.'])
-      : super(message);
+  const BadRequestException([super.message = 'Invalid request.']);
 }
 
 /// خطأ في الـ parsing
@@ -59,8 +57,7 @@ class ParseException extends AppException {
 
 /// خطأ مجهول
 class UnknownException extends AppException {
-  const UnknownException([String message = 'An unexpected error occurred.'])
-      : super(message);
+  const UnknownException([super.message = 'An unexpected error occurred.']);
 }
 
 // ── Auth Exceptions ─────────────────────────────────────────

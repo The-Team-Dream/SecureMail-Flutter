@@ -19,7 +19,7 @@ class SecureMail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
+      debugShowCheckedModeBanner: false,   
       title:        'SecureMail',
       theme:        getThemeLight(),
       darkTheme:    getThemeDark(),
