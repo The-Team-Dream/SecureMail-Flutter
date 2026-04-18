@@ -23,54 +23,59 @@ class AppRoutes {
   AppRoutes._();
 
   // ── Route Names ───────────────────────────────────────────
-  static const splash         = '/';
-  static const login          = '/login';
-  static const register       = '/register';
+  static const splash = '/';
+  static const login = '/login';
+  static const register = '/register';
   static const forgotPassword = '/forgot-password';
-  static const otp            = '/otp';
+  static const otp = '/otp';
 
   // Dashboard Tabs
-  static const profile        = '/profile';
-  static const analytics      = '/analytics';
-  static const mailboxes      = '/mailboxes';
-  static const alerts         = '/alerts';
-  static const settings       = '/settings';
-  static const editProfile    = '/editProfile';
+  static const profile = '/profile';
+  static const analytics = '/analytics';
+  static const mailboxes = '/mailboxes';
+  static const alerts = '/alerts';
+  static const settings = '/settings';
+  static const editProfile = '/editProfile';
   static const changePassword = '/changePassword';
-  static const twoFactorAuth  = '/twoFactorAuth';
+  static const twoFactorAuth = '/twoFactorAuth';
   static const loggedInDevices = '/loggedInDevices';
   static const notificationsSettings = '/notificationsSettings';
   static const privacySecurity = '/privacySecurity';
-  
+
+  static const addMailboxStep1 = '/add-mailbox/step1';
+  static const addMailboxStep2 = '/add-mailbox/step2';
+  static const addMailboxStep3 = '/add-mailbox/step3';
+  static const addMailboxStep4 = '/add-mailbox/step4';
+  static const addMailboxStep5 = '/add-mailbox/step5';
+
   // Keep dashboard as an alias or just use mailboxes
-  static const dashboard      = mailboxes;
+  static const dashboard = mailboxes;
 }
 
 final appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
   routes: [
-
     // ── Splash ───────────────────────────────────────────────
     GoRoute(
-      path:    AppRoutes.splash,
+      path: AppRoutes.splash,
       builder: (_, __) => const SplashScreen(),
     ),
 
     // ── Login ────────────────────────────────────────────────
     GoRoute(
-      path:    AppRoutes.login,
+      path: AppRoutes.login,
       builder: (_, __) => const LoginScreen(),
     ),
 
     // ── Register ─────────────────────────────────────────────
     GoRoute(
-      path:    AppRoutes.register,
+      path: AppRoutes.register,
       builder: (_, __) => const RegisterScreen(),
     ),
 
     // ── Forgot Password ───────────────────────────────────────
     GoRoute(
-      path:    AppRoutes.forgotPassword,
+      path: AppRoutes.forgotPassword,
       builder: (_, __) => const ForgotPasswordScreen(),
     ),
 
@@ -112,7 +117,7 @@ final appRouter = GoRouter(
           routes: [
             GoRoute(
               path: AppRoutes.mailboxes,
-              builder: (context, state) => const Mailboxesscreen(),
+              builder: (context, state) => const MailboxesScreen(),
             ),
           ],
         ),
@@ -160,6 +165,8 @@ final appRouter = GoRouter(
       path: AppRoutes.privacySecurity,
       builder: (context, state) => const PrivacySecurityScreen(),
     ),
+
+    // ── Add Mailbox Flow ──────────────────────────────────────
   ],
 
   // ── Error Page ────────────────────────────────────────────

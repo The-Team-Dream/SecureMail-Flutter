@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/theme_data/ThemeDataLight.dart';
 import 'package:securemail/core/theme/theme_data/ThemeDataDark.dart';
+import 'package:securemail/core/theme/theme_controller.dart'; // ← جديد
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,17 +14,20 @@ void main() async {
   );
 }
 
-class SecureMail extends StatelessWidget {
+// ✅ بقى ConsumerWidget بدل StatelessWidget
+class SecureMail extends ConsumerWidget {
   const SecureMail({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeState = ref.watch(themeProvider); // ← نسمع التغييرات
+
     return MaterialApp.router(
-      debugShowCheckedModeBanner: false,   
+      debugShowCheckedModeBanner: false,
       title:        'SecureMail',
       theme:        getThemeLight(),
       darkTheme:    getThemeDark(),
-      themeMode:    ThemeMode.system,
+      themeMode:    themeState.themeMode, // ← بدل ThemeMode.system
       routerConfig: appRouter,
     );
   }

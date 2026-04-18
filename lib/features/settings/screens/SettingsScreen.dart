@@ -1,25 +1,28 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:securemail/core/theme/theme_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-class Settingsscreen extends StatefulWidget {
+class Settingsscreen extends ConsumerStatefulWidget {
   const Settingsscreen({super.key});
 
   @override
-  State<Settingsscreen> createState() => _SettingsscreenState();
+  ConsumerState<Settingsscreen> createState() => _SettingsscreenState();
 }
 
-class _SettingsscreenState extends State<Settingsscreen> {
-  bool _darkMode = true;
+class _SettingsscreenState extends ConsumerState<Settingsscreen> {
+  // ✅ لا حاجة لـ _darkMode
 
   @override
   Widget build(BuildContext context) {
+    final isDark = ref.watch(themeProvider).isDarkMode; // ← نسمع الثيم
+
     return Scaffold(
       backgroundColor: context.bgColor,
       appBar: AppBar(
@@ -59,8 +62,10 @@ class _SettingsscreenState extends State<Settingsscreen> {
                   icon: Icons.dark_mode_outlined,
                   title: 'Dark Mode',
                   subtitle: 'Save battery and reduce strain',
-                  value: _darkMode,
-                  onChanged: (val) => setState(() => _darkMode = val),
+                  value: isDark,
+                  onChanged: (val) {
+                    ref.read(themeProvider.notifier).toggleTheme();
+                  },
                 ),
               ],
             ),
@@ -129,7 +134,7 @@ class _SettingsscreenState extends State<Settingsscreen> {
                   subtitle: 'Encryption keys, Biometrics',
                   onTap: () async {
                     const url =
-                        'https://www.youtube.com/watch?v=WlJUG-6UsQI&list=RD-jlaaizKuCA&index=2'; // ← هنا حط الـ URL
+                        'https://www.youtube.com/watch?v=WlJUG-6UsQI&list=RD-jlaaizKuCA&index=2';
                     if (await canLaunchUrl(Uri.parse(url))) {
                       await launchUrl(
                         Uri.parse(url),
