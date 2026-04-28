@@ -17,9 +17,9 @@ class ThemeState {
 class ThemeNotifier extends StateNotifier<ThemeState> {
   ThemeNotifier() : super(const ThemeState());
 
-  void toggleTheme() {
+  void toggleTheme(bool currentlyIsDark) {
     state = state.copyWith(
-      themeMode: state.isDarkMode ? ThemeMode.light : ThemeMode.dark,
+      themeMode: currentlyIsDark ? ThemeMode.light : ThemeMode.dark,
     );
   }
 
@@ -31,7 +31,7 @@ class ThemeNotifier extends StateNotifier<ThemeState> {
     state = state.copyWith(themeMode: ThemeMode.light);
   }
 }
-
+ 
 final themeProvider = StateNotifierProvider<ThemeNotifier, ThemeState>(
   (ref) => ThemeNotifier(),
 );

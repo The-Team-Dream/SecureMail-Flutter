@@ -5,32 +5,32 @@ import 'package:securemail/core/mock/mock_data.dart';
 
 class OtpState {
   const OtpState({
-    this.isLoading      = false,
-    this.isResending    = false,
+    this.isLoading = false,
+    this.isResending = false,
     this.error,
-    this.isVerified     = false,
-    this.resendSuccess  = false,
+    this.isVerified = false,
+    this.resendSuccess = false,
   });
 
-  final bool    isLoading;
-  final bool    isResending;   // spinner منفصل لزرار الـ resend
+  final bool isLoading;
+  final bool isResending; // spinner منفصل لزرار الـ resend
   final String? error;
-  final bool    isVerified;
-  final bool    resendSuccess;
+  final bool isVerified;
+  final bool resendSuccess;
 
   OtpState copyWith({
-    bool?    isLoading,
-    bool?    isResending,
-    String?  error,
-    bool?    isVerified,
-    bool?    resendSuccess,
-    bool     clearError = false,
+    bool? isLoading,
+    bool? isResending,
+    String? error,
+    bool? isVerified,
+    bool? resendSuccess,
+    bool clearError = false,
   }) {
     return OtpState(
-      isLoading:     isLoading     ?? this.isLoading,
-      isResending:   isResending   ?? this.isResending,
-      error:         clearError ? null : error ?? this.error,
-      isVerified:    isVerified    ?? this.isVerified,
+      isLoading: isLoading ?? this.isLoading,
+      isResending: isResending ?? this.isResending,
+      error: clearError ? null : error ?? this.error,
+      isVerified: isVerified ?? this.isVerified,
       resendSuccess: resendSuccess ?? this.resendSuccess,
     );
   }
@@ -64,7 +64,7 @@ class OtpNotifier extends StateNotifier<OtpState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error:     'Invalid or expired OTP. Please try again.',
+        error: 'Invalid or expired OTP. Please try again.',
       );
       return false;
     }
@@ -75,9 +75,9 @@ class OtpNotifier extends StateNotifier<OtpState> {
   /// أو لو الـ Backend عنده endpoint منفصل نغيره
   Future<bool> resendOtp({required String email}) async {
     state = state.copyWith(
-      isResending:   true,
+      isResending: true,
       resendSuccess: false,
-      clearError:    true,
+      clearError: true,
     );
 
     try {
@@ -94,7 +94,7 @@ class OtpNotifier extends StateNotifier<OtpState> {
     } catch (e) {
       state = state.copyWith(
         isResending: false,
-        error:       'Failed to resend OTP. Please try again.',
+        error: 'Failed to resend OTP. Please try again.',
       );
       return false;
     }

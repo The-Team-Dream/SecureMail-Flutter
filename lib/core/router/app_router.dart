@@ -6,11 +6,16 @@ import 'package:securemail/features/auth/screens/RegisterScreen.dart';
 import 'package:securemail/features/auth/screens/ForgotPasswordScreen.dart';
 import 'package:securemail/features/auth/screens/OtpScreen.dart';
 import 'package:securemail/features/dashboard/screens/DashboardScreen.dart';
-
 import 'package:securemail/features/profile/screens/ProfileScreen.dart';
-import 'package:securemail/features/analytics/screens/AnalyticsScreen.dart';
 import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
-import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/InboxScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/SentScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/SpamScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/MalwareScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/PhishingScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/ReportsScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/MailboxSettingsScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/ComposeScreen.dart';
 import 'package:securemail/features/settings/screens/ChangePasswordScreen.dart';
 import 'package:securemail/features/settings/screens/EditProfileScreen.dart';
 import 'package:securemail/features/settings/screens/LoggedInDevicesScreen.dart';
@@ -35,6 +40,16 @@ class AppRoutes {
   static const mailboxes = '/mailboxes';
   static const alerts = '/alerts';
   static const settings = '/settings';
+
+  static const inbox = '/mailboxes/inbox';
+  static const sent = '/mailboxes/sent';
+  static const spam = '/mailboxes/spam';
+  static const malware = '/mailboxes/malware';
+  static const phishing = '/mailboxes/phishing';
+  static const reports = '/mailboxes/reports';
+  static const mailboxSettings = '/mailboxes/settings';
+  static const compose = '/mailboxes/compose';
+
   static const editProfile = '/editProfile';
   static const changePassword = '/changePassword';
   static const twoFactorAuth = '/twoFactorAuth';
@@ -103,34 +118,46 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // 1: Analytics
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.analytics,
-              builder: (context, state) => const Analyticsscreen(),
-            ),
-          ],
-        ),
-        // 2: Mailboxes
+        // 1: Mailboxes
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: AppRoutes.mailboxes,
               builder: (context, state) => const MailboxesScreen(),
+              routes: [
+                GoRoute(
+                  path: 'inbox',
+                  builder: (context, state) => const InboxScreen(),
+                ),
+                GoRoute(
+                  path: 'sent',
+                  builder: (context, state) => const SentScreen(),
+                ),
+                GoRoute(
+                  path: 'spam',
+                  builder: (context, state) => const SpamScreen(),
+                ),
+                GoRoute(
+                  path: 'malware',
+                  builder: (context, state) => const MalwareScreen(),
+                ),
+                GoRoute(
+                  path: 'phishing',
+                  builder: (context, state) => const PhishingScreen(),
+                ),
+                GoRoute(
+                  path: 'reports',
+                  builder: (context, state) => const ReportsScreen(),
+                ),
+                GoRoute(
+                  path: 'settings',
+                  builder: (context, state) => const MailboxSettingsScreen(),
+                ),
+              ],
             ),
           ],
         ),
-        // 3: Alerts
-        StatefulShellBranch(
-          routes: [
-            GoRoute(
-              path: AppRoutes.alerts,
-              builder: (context, state) => const Alertsscreen(),
-            ),
-          ],
-        ),
-        // 4: Settings
+        // 2: Settings (Config)
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -167,6 +194,10 @@ final appRouter = GoRouter(
     ),
 
     // ── Add Mailbox Flow ──────────────────────────────────────
+    GoRoute(
+      path: AppRoutes.compose,
+      builder: (context, state) => const ComposeScreen(),
+    ),
   ],
 
   // ── Error Page ────────────────────────────────────────────

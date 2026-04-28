@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox/Step1ProviderScreen.dart';
@@ -194,6 +196,7 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
                                 const EdgeInsets.only(bottom: AppSpacing.x2),
                             child: _MailboxCard(
                               mailbox: m,
+                              onTap: () => context.go(AppRoutes.inbox),
                               onRemove: () => ref
                                   .read(mailboxesProvider.notifier)
                                   .removeMailbox(m.id),
@@ -238,62 +241,67 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
 class _MailboxCard extends StatelessWidget {
   const _MailboxCard({
     required this.mailbox,
+    required this.onTap,
     required this.onRemove,
     required this.onRetry,
   });
 
   final MailboxModel mailbox;
+  final VoidCallback onTap;
   final VoidCallback onRemove;
   final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.x4,
-        vertical: AppSpacing.x3,
-      ),
-      decoration: BoxDecoration(
-        color: context.card1,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: context.fieldBorder),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: AppSize.avatarMd,
-            height: AppSize.avatarMd,
-            decoration: BoxDecoration(
-              color: context.button1.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.x4,
+          vertical: AppSpacing.x3,
+        ),
+        decoration: BoxDecoration(
+          color: context.card1,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: context.fieldBorder),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: AppSize.avatarMd,
+              height: AppSize.avatarMd,
+              decoration: BoxDecoration(
+                color: context.button1.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+              ),
+              child: Icon(_providerIcon,
+                  color: context.button1, size: AppIconSize.md),
             ),
-            child: Icon(_providerIcon,
-                color: context.button1, size: AppIconSize.md),
-          ),
-          const SizedBox(width: AppSpacing.x3),
+            const SizedBox(width: AppSpacing.x3),
 
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  mailbox.email,
-                  style: AppTextStyles.labelM.copyWith(
-                    color: context.text1,
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    mailbox.email,
+                    style: AppTextStyles.labelM.copyWith(
+                      color: context.text1,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSpacing.x1),
-                _buildStatusWidget(context),
-              ],
+                  const SizedBox(height: AppSpacing.x1),
+                  _buildStatusWidget(context),
+                ],
+              ),
             ),
-          ),
 
-          // Action
-          _buildAction(context),
-        ],
+            // Action
+            _buildAction(context),
+          ],
+        ),
       ),
     );
   }

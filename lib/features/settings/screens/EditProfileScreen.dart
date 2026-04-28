@@ -4,6 +4,7 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/utils/validators.dart';
+import 'package:securemail/features/auth/providers/profile_provider.dart';
 import 'package:securemail/shared/widgets/app_border_outline.dart';
 import 'package:securemail/shared/widgets/app_primary_button.dart';
 import 'package:securemail/shared/widgets/auth_gradient_background.dart';
@@ -17,11 +18,26 @@ class EditProfileScreen extends ConsumerStatefulWidget {
 
 class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameCtrl = TextEditingController(text: 'Alex Johnson');
-  final _emailCtrl = TextEditingController(text: 'alex.johnson@securemail.com');
-  final _phoneCtrl = TextEditingController(text: '+1 (555) 000-0000');
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
 
   bool _isLoading = false;
+
+  // ── القيم الأصلية عشان نرجعلها لو discard ─────────────────
+  String _originalName = '';
+  String _originalEmail = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // ← اشحن من الـ provider مش hardcoded
+    final profile = ref.read(profileProvider).profile;
+    _nameCtrl.text = profile?.username ?? '';
+    _emailCtrl.text = profile?.email ?? '';
+    _originalName = profile?.username ?? '';
+    _originalEmail = profile?.email ?? '';
+  }
 
   @override
   void dispose() {
@@ -44,6 +60,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     await Future.delayed(const Duration(milliseconds: 1000));
 
     if (!mounted) return;
+
+    // ← السطر المهم: بيحدث ProfileScreen تلقائياً
+    await ref.read(profileProvider.notifier).refresh();
+
     setState(() => _isLoading = false);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -62,9 +82,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   }
 
   void _discard() {
-    _nameCtrl.text = 'Alex Johnson';
-    _emailCtrl.text = 'alex.johnson@securemail.com';
-    _phoneCtrl.text = '+1 (555) 000-0000';
+    // ← ارجع للبيانات الأصلية من الـ provider
+    _nameCtrl.text = _originalName;
+    _emailCtrl.text = _originalEmail;
+    _phoneCtrl.clear();
     setState(() {});
   }
 
@@ -97,14 +118,13 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     // ── User Info ───────────────────────────
                     Text(
                       _nameCtrl.text,
-                      style: AppTextStyles.headingL
-                          .copyWith(color: context.text1),
+                      style:
+                          AppTextStyles.headingL.copyWith(color: context.text1),
                     ),
                     const SizedBox(height: AppSpacing.x1),
                     Text(
                       _emailCtrl.text,
-                      style: AppTextStyles.bodyM
-                          .copyWith(color: context.text3),
+                      style: AppTextStyles.bodyM.copyWith(color: context.text3),
                     ),
                     const SizedBox(height: AppSpacing.x8),
 
@@ -138,11 +158,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     const SizedBox(height: AppSpacing.x1),
                     Row(
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 12,
-                          color: context.text3,
-                        ),
+                        Icon(Icons.info_outline,
+                            size: 12, color: context.text3),
                         const SizedBox(width: 4),
                         Text(
                           'Email cannot be changed for security reasons.',
@@ -227,11 +244,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           child: CircleAvatar(
             radius: 50,
             backgroundColor: context.card2,
-            child: Icon(
-              Icons.person,
-              size: 56,
-              color: context.button1,
-            ),
+            child: Icon(Icons.person, size: 56, color: context.button1),
           ),
         ),
         Positioned(

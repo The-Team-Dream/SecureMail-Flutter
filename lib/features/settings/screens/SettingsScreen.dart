@@ -21,7 +21,8 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = ref.watch(themeProvider).isDarkMode; // ← نسمع الثيم
+    final isDark = context.isDark; // ← نستخدم الـ extension لمراقبة الحالة الفعلية
+    ref.watch(themeProvider); // ← نحتاج مراقبة الـ provider ليعاد بناء الودجت عند التغيير
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -64,7 +65,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                   subtitle: 'Save battery and reduce strain',
                   value: isDark,
                   onChanged: (val) {
-                    ref.read(themeProvider.notifier).toggleTheme();
+                    ref.read(themeProvider.notifier).toggleTheme(isDark);
                   },
                 ),
               ],
@@ -179,7 +180,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
       decoration: BoxDecoration(
         color: context.card1,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: context.fieldBorder.withOpacity(0.3)),
+        border: Border.all(color: context.fieldBorder.withValues(alpha: 0.3)),
       ),
       child: Column(children: children),
     );
@@ -258,7 +259,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
             value: value,
             onChanged: onChanged,
             activeColor: context.button1,
-            activeTrackColor: context.button2.withOpacity(0.3),
+            activeTrackColor: context.button1.withValues(alpha: 0.3),
             inactiveThumbColor: context.text3,
             inactiveTrackColor: context.card2,
           ),
@@ -273,7 +274,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: context.button1.withOpacity(0.15),
+        color: context.button1.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(AppRadius.xl),
       ),
       child: Icon(icon, color: context.button1, size: 20),
@@ -283,7 +284,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
   // ── Divider ───────────────────────────────────────────────
   Widget _buildDivider() {
     return Divider(
-      color: context.fieldBorder.withOpacity(0.3),
+      color: context.fieldBorder.withValues(alpha: 0.3),
       height: 1,
       indent: AppSpacing.x4 + 40 + AppSpacing.x3,
     );
@@ -299,7 +300,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
       decoration: BoxDecoration(
         color: context.card1,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: context.fieldBorder.withOpacity(0.3)),
+        border: Border.all(color: context.fieldBorder.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
@@ -307,7 +308,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFE24B4A).withOpacity(0.15),
+              color: const Color(0xFFE24B4A).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: const Icon(Icons.delete_outline,
@@ -359,7 +360,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
             padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.x4, vertical: AppSpacing.x2),
             decoration: BoxDecoration(
-              border: Border.all(color: context.button1.withOpacity(0.5)),
+              border: Border.all(color: context.button1.withValues(alpha: 0.5)),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
