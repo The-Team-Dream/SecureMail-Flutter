@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
@@ -12,8 +14,6 @@ class MailboxMessageList extends StatelessWidget {
 
   final List<MailboxMessage> messages;
   final String emptyTitle;
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +29,9 @@ class MailboxMessageList extends StatelessWidget {
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: messages.length,
-      separatorBuilder: (_, __) => Divider(
-        color: context.fieldBorder.withValues(alpha: 0.15),
-        height: 1,
-      ),
       itemBuilder: (context, index) {
         return _MessageTile(message: messages[index]);
       },
@@ -51,21 +47,17 @@ class _MessageTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {},
+      onTap: () => context.push(AppRoutes.messageDetail, extra: message),
       child: Container(
         height: 114,
-        color: message.isActive
-            ? context.card1
-            : Colors.transparent,
+        color: message.isActive ? context.card1 : Colors.transparent,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               width: 2,
-              color: message.isActive
-                  ? context.button1
-                  : Colors.transparent,
+              color: message.isActive ? context.button1 : Colors.transparent,
             ),
             Expanded(
               child: Padding(
@@ -177,8 +169,8 @@ class _Avatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 50,
-      height: 50,
+      width: 40,
+      height: 40,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: message.avatarColor,
@@ -186,12 +178,12 @@ class _Avatar extends StatelessWidget {
       ),
       child: Text(
         message.initials,
-        maxLines: 1,
         style: AppTextStyles.headingM.copyWith(
           color: message.badgeColor == const Color(0xFFFF5252)
               ? const Color(0xFFFF5252)
               : context.button1,
           fontWeight: FontWeight.w800,
+          fontSize: 16,
           height: 1,
         ),
       ),

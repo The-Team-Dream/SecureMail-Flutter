@@ -36,8 +36,6 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
   String _activeFilter = 'All';
   String _query = '';
 
-
-
   @override
   void dispose() {
     _searchController.dispose();

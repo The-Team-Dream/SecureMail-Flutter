@@ -8,6 +8,7 @@ import 'package:securemail/features/auth/screens/OtpScreen.dart';
 import 'package:securemail/features/dashboard/screens/DashboardScreen.dart';
 import 'package:securemail/features/profile/screens/ProfileScreen.dart';
 import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
+import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/features/mailbox_detail/screens/InboxScreen.dart';
 import 'package:securemail/features/mailbox_detail/screens/SentScreen.dart';
 import 'package:securemail/features/mailbox_detail/screens/SpamScreen.dart';
@@ -16,6 +17,7 @@ import 'package:securemail/features/mailbox_detail/screens/PhishingScreen.dart';
 import 'package:securemail/features/mailbox_detail/screens/ReportsScreen.dart';
 import 'package:securemail/features/mailbox_detail/screens/MailboxSettingsScreen.dart';
 import 'package:securemail/features/mailbox_detail/screens/ComposeScreen.dart';
+import 'package:securemail/features/mailbox_detail/screens/MessageDetailScreen.dart';
 import 'package:securemail/features/settings/screens/ChangePasswordScreen.dart';
 import 'package:securemail/features/settings/screens/EditProfileScreen.dart';
 import 'package:securemail/features/settings/screens/LoggedInDevicesScreen.dart';
@@ -49,6 +51,7 @@ class AppRoutes {
   static const reports = '/mailboxes/reports';
   static const mailboxSettings = '/mailboxes/settings';
   static const compose = '/mailboxes/compose';
+  static const messageDetail = '/mailboxes/message-detail';
 
   static const editProfile = '/editProfile';
   static const changePassword = '/changePassword';
@@ -198,6 +201,13 @@ final appRouter = GoRouter(
       path: AppRoutes.compose,
       builder: (context, state) => const ComposeScreen(),
     ),
+    GoRoute(
+      path: AppRoutes.messageDetail,
+      builder: (context, state) {
+        final message = state.extra as MailboxMessage;
+        return MessageDetailScreen(message: message);
+      },
+),
   ],
 
   // ── Error Page ────────────────────────────────────────────
