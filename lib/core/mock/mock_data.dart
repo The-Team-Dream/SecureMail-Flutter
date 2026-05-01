@@ -373,6 +373,39 @@ class MockData {
     },
   ];
   // ══════════════════════════════════════════════════════════
+  // INCIDENTS
+  // ══════════════════════════════════════════════════════════
+
+  /// GET /incidents
+  static const mockIncidents = [
+    {
+      'id': 'inc_001',
+      'type': 'criticalThreat',
+      'title': 'Phishing Attempt: IT Support',
+      'description': 'Targeting: CEO Office • Source: external-mail.net',
+      'timeAgo': '2m ago',
+      'avatarInitials': ['JD', 'AS'],
+    },
+    {
+      'id': 'inc_002',
+      'type': 'suspiciousActivity',
+      'title': 'Bulk Data Export Request',
+      'description': 'Origin: Unusual IP (Shanghai) • Volume: 4.2GB',
+      'timeAgo': '45m ago',
+      'location': 'Shanghai, CN',
+    },
+    {
+      'id': 'inc_003',
+      'type': 'systemUpdate',
+      'title': 'Firewall Rules Updated',
+      'description': 'Auto-remediation successful for port 8080',
+      'timeAgo': '2h ago',
+      'resolvedLabel': 'Resolved Automatically',
+      'isRead': true,
+    },
+  ];
+
+  // ══════════════════════════════════════════════════════════
   // HELPERS
   // ══════════════════════════════════════════════════════════
 

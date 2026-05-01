@@ -17,6 +17,7 @@ class MailboxFolderScaffold extends StatefulWidget {
     this.trailing,
     this.mailboxEmail = '',
     this.unreadCount,
+    this.showRiskBadge = true,
   });
 
   final String title;
@@ -26,6 +27,7 @@ class MailboxFolderScaffold extends StatefulWidget {
   final Widget? trailing;
   final String mailboxEmail;
   final int? unreadCount;
+  final bool showRiskBadge;
 
   @override
   State<MailboxFolderScaffold> createState() => _MailboxFolderScaffoldState();
@@ -152,6 +154,7 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
               child: MailboxMessageList(
                 messages: messages,
                 emptyTitle: 'No ${widget.title.toLowerCase()} messages',
+                showRiskBadge: widget.showRiskBadge,
               ),
             ),
           ],
@@ -277,8 +280,7 @@ class _FilterChip extends StatelessWidget {
           decoration: BoxDecoration(
             color: selected
                 ? context.button1
-                : context.button1
-                    .withValues(alpha: 0.45),
+                : context.button1.withValues(alpha: 0.45),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: context.button1.withValues(alpha: 0.6),

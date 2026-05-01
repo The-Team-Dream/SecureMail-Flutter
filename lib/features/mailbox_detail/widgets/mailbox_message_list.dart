@@ -10,10 +10,12 @@ class MailboxMessageList extends StatelessWidget {
     super.key,
     required this.messages,
     this.emptyTitle = 'No messages',
+    this.showRiskBadge = true,
   });
 
   final List<MailboxMessage> messages;
   final String emptyTitle;
+  final bool showRiskBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -29,27 +31,41 @@ class MailboxMessageList extends StatelessWidget {
       );
     }
 
-    return ListView.builder(
+    return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: messages.length,
       itemBuilder: (context, index) {
-        return _MessageTile(message: messages[index]);
+        return _MessageTile(
+          message: messages[index],
+          showRiskBadge: showRiskBadge,
+        );
+      },
+      separatorBuilder: (context, index) {
+        return Divider(
+          height: 1,
+          thickness: 1,
+          color: context.text3.withValues(alpha: 0.15),
+        );
       },
     );
   }
 }
 
 class _MessageTile extends StatelessWidget {
-  const _MessageTile({required this.message});
+  const _MessageTile({
+    required this.message,
+    this.showRiskBadge = true,
+  });
 
   final MailboxMessage message;
+  final bool showRiskBadge;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => context.push(AppRoutes.messageDetail, extra: message),
       child: Container(
-        height: 114,
+        height: showRiskBadge ? 114 : 88,
         color: message.isActive ? context.card1 : Colors.transparent,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -64,7 +80,10 @@ class _MessageTile extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 14, 14),
                 child: Row(
                   children: [
-                    _Avatar(message: message),
+                    _Avatar(
+                      message: message,
+                      showRiskBadge: showRiskBadge,
+                    ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Column(
@@ -120,33 +139,35 @@ class _MessageTile extends StatelessWidget {
                               height: 1.15,
                             ),
                           ),
-                          const Spacer(),
-                          Row(
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: BoxDecoration(
-                                  color: message.badgeColor,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  message.badgeLabel,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.labelS.copyWith(
+                          if (showRiskBadge) ...[
+                            const Spacer(),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
                                     color: message.badgeColor,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.3,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    message.badgeLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.labelS.copyWith(
+                                      color: message.badgeColor,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -162,9 +183,13 @@ class _MessageTile extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({required this.message});
+  const _Avatar({
+    required this.message,
+    this.showRiskBadge = true,
+  });
 
   final MailboxMessage message;
+  final bool showRiskBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -179,7 +204,7 @@ class _Avatar extends StatelessWidget {
       child: Text(
         message.initials,
         style: AppTextStyles.headingM.copyWith(
-          color: message.badgeColor == const Color(0xFFFF5252)
+          color: showRiskBadge && message.badgeColor == const Color(0xFFFF5252)
               ? const Color(0xFFFF5252)
               : context.button1,
           fontWeight: FontWeight.w800,

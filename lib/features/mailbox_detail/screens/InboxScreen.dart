@@ -8,7 +8,8 @@ class InboxScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = MailboxMockMessages.inbox.where((m) => m.isActive).length;
+    final unreadCount =
+        MailboxMockMessages.inbox.where((m) => m.isActive).length;
 
     return MailboxFolderScaffold(
       title: 'Inbox',
@@ -16,6 +17,7 @@ class InboxScreen extends StatelessWidget {
       messages: MailboxMockMessages.inbox,
       showFilters: true,
       unreadCount: unreadCount,
+      showRiskBadge: false,
     );
   }
 }
