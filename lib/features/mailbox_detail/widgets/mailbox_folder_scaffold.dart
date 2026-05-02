@@ -55,14 +55,16 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
         mailboxEmail: widget.mailboxEmail,
         unreadCount: widget.unreadCount,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push(AppRoutes.compose),
-        backgroundColor: context.button1,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        shape: const CircleBorder(),
-        child: const Icon(Icons.edit_outlined),
-      ),
+      floatingActionButton: (widget.activeRoute == AppRoutes.inbox || widget.activeRoute == AppRoutes.sent)
+          ? FloatingActionButton(
+              onPressed: () => context.push(AppRoutes.compose),
+              backgroundColor: context.button1,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: const CircleBorder(),
+              child: const Icon(Icons.edit_outlined),
+            )
+          : null,
       body: SafeArea(
         bottom: false,
         child: Column(

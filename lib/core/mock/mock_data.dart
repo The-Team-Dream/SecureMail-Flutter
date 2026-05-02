@@ -406,6 +406,42 @@ class MockData {
   ];
 
   // ══════════════════════════════════════════════════════════
+  // SECURITY REPORTS
+  // ══════════════════════════════════════════════════════════
+
+  /// GET /security-reports/{id}
+  static const mockSecurityReportData = {
+    'status': 'MALICIOUS',
+    'confidenceScore': 97,
+    'detectionMessage': 'Malicious attachment detected.',
+    'severity': 'HIGH',
+    'priority': 'URGENT',
+    'reason': 'Potential data exfiltration detected.',
+    'description':
+        'This email contains a malicious executable masquerading as a PDF document. Opening it may compromise your device.',
+    'recommendationTitle': 'What should you do?',
+    'recommendationText':
+        'Do not open any attachments or links. Delete this email immediately and report it to your IT administrator.',
+    'suggestedActions': ['Delete Email', 'Report to Admin', 'View Headers'],
+    'anomalies': [
+      {
+        'type': 'warning',
+        'title': 'Behavioral Anomaly Detected',
+        'description':
+            'This sender\'s IP address has recently been associated with multiple failed login attempts.'
+      },
+      {
+        'type': 'critical',
+        'title': 'Part of a Known Campaign',
+        'description':
+            'This threat matches the \'Silver Sparrow\' phishing campaign targeting financial services.'
+      }
+    ],
+    'emailId': 'SM-99X7A4B2',
+    'analysisEngine': 'SecureMail AI Engine',
+  };
+
+  // ══════════════════════════════════════════════════════════
   // HELPERS
   // ══════════════════════════════════════════════════════════
 

@@ -8,7 +8,7 @@ class SentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MailboxFolderScaffold(
+    return MailboxFolderScaffold(
       title: 'Sent',
       activeRoute: AppRoutes.sent,
       messages: MailboxMockMessages.sent,

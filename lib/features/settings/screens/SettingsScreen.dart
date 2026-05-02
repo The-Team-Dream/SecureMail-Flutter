@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/theme_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 class Settingsscreen extends ConsumerStatefulWidget {
   const Settingsscreen({super.key});
 
@@ -21,8 +22,10 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = context.isDark; // ← نستخدم الـ extension لمراقبة الحالة الفعلية
-    ref.watch(themeProvider); // ← نحتاج مراقبة الـ provider ليعاد بناء الودجت عند التغيير
+    final isDark =
+        context.isDark; // ← نستخدم الـ extension لمراقبة الحالة الفعلية
+    ref.watch(
+        themeProvider); // ← نحتاج مراقبة الـ provider ليعاد بناء الودجت عند التغيير
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -83,15 +86,6 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                   subtitle: 'Last changed 3 months ago',
                   onTap: () {
                     context.push(AppRoutes.changePassword);
-                  },
-                ),
-                _buildDivider(),
-                _buildNavItem(
-                  icon: Icons.lock_outlined,
-                  title: 'Two-Factor Auth',
-                  subtitle: 'Enhanced account protection',
-                  onTap: () {
-                    context.push(AppRoutes.twoFactorAuth);
                   },
                 ),
               ],

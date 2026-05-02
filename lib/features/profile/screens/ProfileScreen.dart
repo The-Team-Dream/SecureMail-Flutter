@@ -226,16 +226,6 @@ class Profilescreen extends ConsumerWidget {
           onTap: () => context.push(AppRoutes.editProfile),
         ),
         _buildDivider(context),
-        _buildNavItem(
-          context: context,
-          icon: Icons.lock_outlined,
-          title: 'Security & Encryption',
-          subtitle: '2FA, PGP keys, active sessions',
-          trailing: profile?.twoFactorEnabled == true
-              ? _buildBadge(context, '2FA ON', isGreen: true)
-              : null,
-          onTap: () => context.push(AppRoutes.twoFactorAuth),
-        ),
       ],
     );
   }
@@ -418,33 +408,6 @@ class Profilescreen extends ConsumerWidget {
       color: context.fieldBorder.withOpacity(0.3),
       height: 1,
       indent: AppSpacing.x4 + 40 + AppSpacing.x3,
-    );
-  }
-
-  /// Green or teal small badge
-  Widget _buildBadge(
-    BuildContext context,
-    String label, {
-    bool isGreen = false,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.x2,
-        vertical: 3,
-      ),
-      decoration: BoxDecoration(
-        color: context.button1.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: context.button1.withOpacity(0.4)),
-      ),
-      child: Text(
-        label,
-        style: AppTextStyles.labelS.copyWith(
-          color: context.button1,
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
     );
   }
 

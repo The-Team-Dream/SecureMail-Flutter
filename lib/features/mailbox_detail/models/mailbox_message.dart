@@ -77,7 +77,7 @@ class MailboxMockMessages {
     ),
   ];
 
-  static const sent = [
+  static List<MailboxMessage> sent = [
     MailboxMessage(
       initials: 'JD',
       sender: 'To: security@company.com',

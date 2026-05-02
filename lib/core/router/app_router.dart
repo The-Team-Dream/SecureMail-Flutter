@@ -24,7 +24,6 @@ import 'package:securemail/features/settings/screens/LoggedInDevicesScreen.dart'
 import 'package:securemail/features/settings/screens/NotificationsSettingsScreen.dart';
 import 'package:securemail/features/settings/screens/PrivacySecurityScreen.dart';
 import 'package:securemail/features/settings/screens/SettingsScreen.dart';
-import 'package:securemail/features/settings/screens/TwoFactorScreen.dart';
 
 class AppRoutes {
   AppRoutes._();
@@ -179,10 +178,7 @@ final appRouter = GoRouter(
       path: AppRoutes.changePassword,
       builder: (context, state) => const ChangePasswordScreen(),
     ),
-    GoRoute(
-      path: AppRoutes.twoFactorAuth,
-      builder: (context, state) => const TwoFactorScreen(),
-    ),
+
     GoRoute(
       path: AppRoutes.loggedInDevices,
       builder: (context, state) => const LoggedInDevicesScreen(),
