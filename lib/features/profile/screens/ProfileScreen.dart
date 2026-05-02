@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
@@ -16,6 +18,20 @@ class Profilescreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(profileProvider);
     final profile = state.profile;
+
+    // Listen for errors
+    ref.listen(profileProvider.select((s) => s.error), (previous, next) {
+      if (next != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        ref.read(profileProvider.notifier).clearError();
+      }
+    });
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -33,7 +49,7 @@ class Profilescreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     // ── Avatar + Name ──────────────────────
-                    _buildProfileHeader(context, profile),
+                    _buildProfileHeader(context, ref, state),
                     const SizedBox(height: AppSpacing.x5),
 
                     // ── Edit Profile Button ────────────────
@@ -94,7 +110,14 @@ class Profilescreen extends ConsumerWidget {
   // Profile Header
   // ══════════════════════════════════════════════════════════
 
-  Widget _buildProfileHeader(BuildContext context, UserProfile? profile) {
+  Widget _buildProfileHeader(
+    BuildContext context,
+    WidgetRef ref,
+    ProfileState state,
+  ) {
+    final profile = state.profile;
+    final isUpdating = state.isUpdatingAvatar;
+
     return Column(
       children: [
         const SizedBox(height: AppSpacing.x4),
@@ -102,49 +125,51 @@ class Profilescreen extends ConsumerWidget {
         Stack(
           alignment: Alignment.center,
           children: [
-            // Green glow ring
-            Container(
-              width: 108,
-              height: 108,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    context.button1,
-                    context.button1.withOpacity(0.4),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-            ),
-            // White separator ring
-            Container(
-              width: 102,
-              height: 102,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.bgColor,
-              ),
-            ),
             // Avatar circle
             Container(
-              width: 96,
-              height: 96,
+              width: 100,
+              height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: context.button1.withOpacity(0.2),
+                  width: 3,
+                ),
                 color: context.card2,
-                image: profile?.avatarUrl != null
+                image: state.localImage != null
                     ? DecorationImage(
-                        image: NetworkImage(profile!.avatarUrl!),
+                        image: FileImage(state.localImage!),
                         fit: BoxFit.cover,
                       )
-                    : null,
+                    : profile?.avatarUrl != null
+                        ? DecorationImage(
+                            image:
+                                CachedNetworkImageProvider(profile!.avatarUrl!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
               ),
-              child: profile?.avatarUrl == null
+              child: (state.localImage == null && profile?.avatarUrl == null)
                   ? Icon(Icons.person, size: 48, color: context.button1)
                   : null,
             ),
+
+            // Loading Overlay
+            if (isUpdating)
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.black.withOpacity(0.4),
+                ),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
           ],
         ),
         const SizedBox(height: AppSpacing.x4),
@@ -403,6 +428,18 @@ class Profilescreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildIconBoxDanger(BuildContext context, IconData icon) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE24B4A).withOpacity(0.15),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+      ),
+      child: Icon(icon, color: const Color(0xFFE24B4A), size: 20),
+    );
+  }
+
   Widget _buildDivider(BuildContext context) {
     return Divider(
       color: context.fieldBorder.withOpacity(0.3),
@@ -491,7 +528,7 @@ class Profilescreen extends ConsumerWidget {
             ),
           ),
           ElevatedButton(
-            onPressed: () => context.go(AppRoutes.login),
+            onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE24B4A),
               foregroundColor: Colors.white,

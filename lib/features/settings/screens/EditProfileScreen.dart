@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
@@ -37,6 +41,16 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _emailCtrl.text = profile?.email ?? '';
     _originalName = profile?.username ?? '';
     _originalEmail = profile?.email ?? '';
+
+    // Listen for avatar errors
+    ref.listenManual(profileProvider.select((s) => s.error), (previous, next) {
+      if (next != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next), backgroundColor: Colors.redAccent),
+        );
+        ref.read(profileProvider.notifier).clearError();
+      }
+    });
   }
 
   @override
@@ -51,18 +65,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
-    // TODO: استبدل بـ API call حقيقي
-    // await ApiClient.instance.patch(
-    //   ApiConstants.updateProfile,
-    //   data: {'username': _nameCtrl.text.trim()},
-    // );
-
-    await Future.delayed(const Duration(milliseconds: 1000));
-
-    if (!mounted) return;
-
-    // ← السطر المهم: بيحدث ProfileScreen تلقائياً
-    await ref.read(profileProvider.notifier).refresh();
+    // استدعاء الميثود اللي بتحدث الاسم في الحالة (State) وفي الـ API
+    await ref.read(profileProvider.notifier).updateUsername(_nameCtrl.text.trim());
 
     setState(() => _isLoading = false);
 
@@ -228,45 +232,140 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   // ── Avatar ─────────────────────────────────────────────────
   Widget _buildAvatar() {
-    return Stack(
-      children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: context.button1.withOpacity(0.4),
-              width: 2,
-            ),
-            color: context.card2,
-          ),
-          child: CircleAvatar(
-            radius: 50,
-            backgroundColor: context.card2,
-            child: Icon(Icons.person, size: 56, color: context.button1),
-          ),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: Container(
-            width: 30,
-            height: 30,
+    final state = ref.watch(profileProvider);
+    final profile = state.profile;
+    final isUpdating = state.isUpdatingAvatar;
+
+    return GestureDetector(
+      onTap: isUpdating ? null : _pickAndUploadImage,
+      child: Stack(
+        children: [
+          Container(
+            width: 100,
+            height: 100,
             decoration: BoxDecoration(
-              color: context.button1,
               shape: BoxShape.circle,
-              border: Border.all(color: context.bgColor, width: 2),
+              border: Border.all(
+                color: context.button1.withOpacity(0.4),
+                width: 2,
+              ),
+              color: context.card2,
+              image: state.localImage != null
+                  ? DecorationImage(
+                      image: FileImage(state.localImage!),
+                      fit: BoxFit.cover,
+                    )
+                  : profile?.avatarUrl != null
+                      ? DecorationImage(
+                          image:
+                              CachedNetworkImageProvider(profile!.avatarUrl!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
             ),
-            child: const Icon(
-              Icons.camera_alt_outlined,
-              size: 16,
-              color: Colors.white,
+            child: (state.localImage == null && profile?.avatarUrl == null)
+                ? Icon(Icons.person, size: 56, color: context.button1)
+                : null,
+          ),
+
+          // Loading Overlay
+          if (isUpdating)
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.black.withOpacity(0.4),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 3,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: context.button1,
+                shape: BoxShape.circle,
+                border: Border.all(color: context.bgColor, width: 2),
+              ),
+              child: const Icon(
+                Icons.camera_alt_outlined,
+                size: 16,
+                color: Colors.white,
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    final state = ref.read(profileProvider);
+    final hasImage = state.localImage != null || state.profile?.avatarUrl != null;
+
+    final picker = ImagePicker();
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: context.card1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            ListTile(
+              leading: Icon(Icons.photo_library_outlined, color: context.button1),
+              title: Text('Gallery', style: TextStyle(color: context.text1)),
+              onTap: () => Navigator.pop(context, 'gallery'),
+            ),
+            ListTile(
+              leading: Icon(Icons.camera_alt_outlined, color: context.button1),
+              title: Text('Camera', style: TextStyle(color: context.text1)),
+              onTap: () => Navigator.pop(context, 'camera'),
+            ),
+            if (hasImage)
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Color(0xFFE24B4A)),
+                title: const Text('Remove Photo', style: TextStyle(color: Color(0xFFE24B4A))),
+                onTap: () => Navigator.pop(context, 'delete'),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+
+    if (action == null) return;
+
+    if (action == 'delete') {
+      await ref.read(profileProvider.notifier).deleteAvatar();
+      return;
+    }
+
+    final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
+    final pickedFile = await picker.pickImage(
+      source: source,
+      maxWidth: 1000,
+      maxHeight: 1000,
+      imageQuality: 85,
+    );
+
+    if (pickedFile != null) {
+      await ref
+          .read(profileProvider.notifier)
+          .updateAvatar(File(pickedFile.path));
+    }
   }
 
   Widget _buildFieldLabel(String label) {

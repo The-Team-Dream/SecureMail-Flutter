@@ -30,6 +30,7 @@ class ApiConstants {
   // ── User ──────────────────────────────────────────────────
   static const String profile       = '/user/profile';
   static const String updateProfile = '/user/profile/update';
+  static const String uploadAvatar  = '/user/profile/avatar';
   static const String contacts      = '/user/contacts';
 
   // ── Notifications ─────────────────────────────────────────
