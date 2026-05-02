@@ -8,7 +8,7 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/utils/validators.dart';
-import 'package:securemail/features/auth/providers/profile_provider.dart';
+import 'package:securemail/features/profile/screens/profile_provider.dart';
 import 'package:securemail/shared/widgets/app_border_outline.dart';
 import 'package:securemail/shared/widgets/app_primary_button.dart';
 import 'package:securemail/shared/widgets/auth_gradient_background.dart';

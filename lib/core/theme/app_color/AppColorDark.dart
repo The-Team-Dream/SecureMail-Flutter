@@ -39,4 +39,10 @@ class AppColorDark {
   static const Color securityReport1 = Color(0xFF6b1111);
   static const Color securityReport2 = Color(0xFF8f3b32);
   static const Color securityReport3 = Color(0xFFb4dbb8);
+
+  // ── Semantic Colors ───────────────────────────────────────
+  static const Color danger = Color(0xFFFF5252);
+  static const Color success = Color(0xFF2EC4A6);
+  static const Color warning = Color(0xFFFBC02D);
+  static const Color info = Color(0xFF40C4FF);
 }

@@ -47,9 +47,19 @@ class _SecureBottomNav extends StatelessWidget {
       label: 'Profile',
     ),
     _BottomNavItem(
+      icon: Icons.analytics_outlined,
+      activeIcon: Icons.analytics,
+      label: 'Analytics',
+    ),
+    _BottomNavItem(
       icon: Icons.mail_outline,
       activeIcon: Icons.mail,
       label: 'Mailboxes',
+    ),
+    _BottomNavItem(
+      icon: Icons.notifications_outlined,
+      activeIcon: Icons.notifications,
+      label: 'Alerts',
     ),
     _BottomNavItem(
       icon: Icons.settings_outlined,

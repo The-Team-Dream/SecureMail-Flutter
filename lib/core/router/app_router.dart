@@ -8,6 +8,8 @@ import 'package:securemail/features/auth/screens/OtpScreen.dart';
 import 'package:securemail/features/dashboard/screens/DashboardScreen.dart';
 import 'package:securemail/features/profile/screens/ProfileScreen.dart';
 import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
+import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
+import 'package:securemail/features/analytics/screens/AnalyticsScreen.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/features/mailbox_detail/screens/InboxScreen.dart';
 import 'package:securemail/features/mailbox_detail/screens/SentScreen.dart';
@@ -120,7 +122,16 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // 1: Mailboxes
+        // 1: Analytics
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.analytics,
+              builder: (context, state) => const Analyticsscreen(),
+            ),
+          ],
+        ),
+        // 2: Mailboxes
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -159,7 +170,16 @@ final appRouter = GoRouter(
             ),
           ],
         ),
-        // 2: Settings (Config)
+        // 3: Alerts
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: AppRoutes.alerts,
+              builder: (context, state) => const Alertsscreen(),
+            ),
+          ],
+        ),
+        // 4: Settings (Config)
         StatefulShellBranch(
           routes: [
             GoRoute(

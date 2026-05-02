@@ -48,4 +48,10 @@ extension AppColorsX on BuildContext {
   Color get lamp => isDark ? AppColorDark.lamp : AppColorLight.card2;
   Color get securityReport3 =>
       isDark ? AppColorDark.securityReport3 : AppColorLight.securityReport3;
+
+  // ── Semantic Colors ───────────────────────────────────────
+  Color get danger => isDark ? AppColorDark.danger : AppColorLight.danger;
+  Color get success => isDark ? AppColorDark.success : AppColorLight.success;
+  Color get warning => isDark ? AppColorDark.warning : AppColorLight.warning;
+  Color get info => isDark ? AppColorDark.info : AppColorLight.info;
 }

@@ -36,4 +36,10 @@ class AppColorLight {
   static const Color securityReport1 = Color(0xFF822626);
   static const Color securityReport2 = Color(0xFFb34236);
   static const Color securityReport3 = Color(0xFFd3f2d6);
+
+  // ── Semantic Colors ───────────────────────────────────────
+  static const Color danger = Color(0xFFE24B4A);
+  static const Color success = Color(0xFF1F8A70);
+  static const Color warning = Color(0xFFE8A838);
+  static const Color info = Color(0xFF2E94C4);
 }

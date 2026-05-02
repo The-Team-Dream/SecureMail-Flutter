@@ -9,7 +9,7 @@ import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
-import 'package:securemail/features/auth/providers/profile_provider.dart';
+import 'package:securemail/features/profile/screens/profile_provider.dart';
 
 class Profilescreen extends ConsumerWidget {
   const Profilescreen({super.key});
