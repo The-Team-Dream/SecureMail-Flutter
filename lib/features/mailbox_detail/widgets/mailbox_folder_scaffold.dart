@@ -155,6 +155,7 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
             Expanded(
               child: MailboxMessageList(
                 messages: messages,
+                folderName: widget.title,
                 emptyTitle: 'No ${widget.title.toLowerCase()} messages',
                 showRiskBadge: widget.showRiskBadge,
               ),

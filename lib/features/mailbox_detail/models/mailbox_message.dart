@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class MailboxMessage {
   const MailboxMessage({
+    required this.id,
     required this.initials,
     required this.sender,
     required this.subject,
@@ -13,6 +14,7 @@ class MailboxMessage {
     this.isActive = false,
   });
 
+  final String id;
   final String initials;
   final String sender;
   final String subject;
@@ -29,6 +31,7 @@ class MailboxMockMessages {
 
   static const inbox = [
     MailboxMessage(
+      id: 'msg_001',
       initials: 'AS',
       sender: 'Amazon Security',
       subject: 'Suspicious login detected',
@@ -39,6 +42,7 @@ class MailboxMockMessages {
       isActive: true,
     ),
     MailboxMessage(
+      id: 'msg_002',
       initials: 'BN',
       sender: 'Binance Support',
       subject: 'Withdrawal Confirmation',
@@ -48,6 +52,7 @@ class MailboxMockMessages {
       badgeColor: Color(0xFF8CEB2F),
     ),
     MailboxMessage(
+      id: 'msg_003',
       initials: 'JH',
       sender: 'Julian H. (Vault)',
       subject: 'Encrypted Payload Attached',
@@ -57,6 +62,7 @@ class MailboxMockMessages {
       badgeColor: Color(0xFF8CEB2F),
     ),
     MailboxMessage(
+      id: 'msg_004',
       initials: '??',
       sender: 'service@paypal.co',
       subject: 'Action Required: Your account is limited',
@@ -67,6 +73,7 @@ class MailboxMockMessages {
       avatarColor: Color(0xFF3A1716),
     ),
     MailboxMessage(
+      id: 'msg_005',
       initials: 'GH',
       sender: 'GitHub Enterprise',
       subject: 'Security Alert: Exposed Secret',
@@ -77,8 +84,9 @@ class MailboxMockMessages {
     ),
   ];
 
-  static List<MailboxMessage> sent = [
+  static const sent = [
     MailboxMessage(
+      id: 'msg_006',
       initials: 'JD',
       sender: 'To: security@company.com',
       subject: 'Re: Q1 Security Report',
@@ -88,6 +96,7 @@ class MailboxMockMessages {
       badgeColor: Color(0xFF8CEB2F),
     ),
     MailboxMessage(
+      id: 'msg_007',
       initials: 'JD',
       sender: 'To: julian@vault.local',
       subject: 'Vault key rotation',
@@ -100,6 +109,7 @@ class MailboxMockMessages {
 
   static const spam = [
     MailboxMessage(
+      id: 'msg_008',
       initials: '!!',
       sender: 'promo@spammy-deals.com',
       subject: 'You have won a prize!',
@@ -110,6 +120,7 @@ class MailboxMockMessages {
       avatarColor: Color(0xFF34240B),
     ),
     MailboxMessage(
+      id: 'msg_009',
       initials: 'AD',
       sender: 'alerts@bulkmailer.net',
       subject: 'Final offer expires today',
@@ -123,6 +134,7 @@ class MailboxMockMessages {
 
   static const malware = [
     MailboxMessage(
+      id: 'msg_010',
       initials: 'EX',
       sender: 'external.invoice@corp-pay.com',
       subject: 'Invoice payload blocked',
@@ -136,6 +148,7 @@ class MailboxMockMessages {
 
   static const phishing = [
     MailboxMessage(
+      id: 'msg_011',
       initials: '??',
       sender: 'support@fake-bank-verify.com',
       subject: 'URGENT: Verify your account now',
@@ -146,6 +159,7 @@ class MailboxMockMessages {
       avatarColor: Color(0xFF3A1716),
     ),
     MailboxMessage(
+      id: 'msg_012',
       initials: 'PP',
       sender: 'service@paypaI.co',
       subject: 'Account access limited',

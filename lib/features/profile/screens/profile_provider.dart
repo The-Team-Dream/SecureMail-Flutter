@@ -189,7 +189,7 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
     try {
       // TODO: استبدل بـ API call حقيقي
       // await ApiClient.instance.put(ApiConstants.updateProfile, data: {'username': newName});
-      
+
       await Future.delayed(const Duration(milliseconds: 500)); // mock delay
     } catch (e) {
       // Revert if API fails
@@ -223,10 +223,10 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
       // For mock, we'll simulate a successful upload.
       // In a real app, the server would return a URL like:
       // final newAvatarUrl = response.data['avatarUrl'];
-      
+
       // For now, we will keep the local image to show the user's actual selection
       // and just clear the loading state.
-      
+
       if (state.profile != null) {
         state = state.copyWith(
           isUpdatingAvatar: false,

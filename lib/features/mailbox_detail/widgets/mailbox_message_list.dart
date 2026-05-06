@@ -4,16 +4,19 @@ import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
+import 'package:securemail/features/mailbox_detail/widgets/reclassify_sheet.dart';
 
 class MailboxMessageList extends StatelessWidget {
   const MailboxMessageList({
     super.key,
     required this.messages,
+    required this.folderName,
     this.emptyTitle = 'No messages',
     this.showRiskBadge = true,
   });
 
   final List<MailboxMessage> messages;
+  final String folderName;
   final String emptyTitle;
   final bool showRiskBadge;
 
@@ -37,6 +40,7 @@ class MailboxMessageList extends StatelessWidget {
       itemBuilder: (context, index) {
         return _MessageTile(
           message: messages[index],
+          folderName: folderName,
           showRiskBadge: showRiskBadge,
         );
       },
@@ -54,16 +58,22 @@ class MailboxMessageList extends StatelessWidget {
 class _MessageTile extends StatelessWidget {
   const _MessageTile({
     required this.message,
+    required this.folderName,
     this.showRiskBadge = true,
   });
 
   final MailboxMessage message;
+  final String folderName;
   final bool showRiskBadge;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.push(AppRoutes.messageDetail, extra: message),
+      onTap: () => context.push(
+        AppRoutes.messageDetail,
+        extra: {'message': message, 'folder': folderName},
+      ),
+      onLongPress: folderName == 'Sent' ? null : () => _showReclassifySheet(context),
       child: Container(
         height: showRiskBadge ? 114 : 88,
         color: message.isActive ? context.card1 : Colors.transparent,
@@ -177,6 +187,20 @@ class _MessageTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showReclassifySheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.card1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => ReclassifySheet(
+        message: message,
+        currentFolder: folderName,
       ),
     );
   }

@@ -13,23 +13,23 @@ class AuthState {
     this.accessToken,
   });
 
-  final bool    isLoading;
+  final bool isLoading;
   final String? error;
-  final bool    isAuthenticated;
+  final bool isAuthenticated;
   final String? accessToken;
 
   AuthState copyWith({
-    bool?    isLoading,
-    String?  error,
-    bool?    isAuthenticated,
-    String?  accessToken,
-    bool     clearError = false,
+    bool? isLoading,
+    String? error,
+    bool? isAuthenticated,
+    String? accessToken,
+    bool clearError = false,
   }) {
     return AuthState(
-      isLoading:       isLoading       ?? this.isLoading,
-      error:           clearError ? null : error ?? this.error,
+      isLoading: isLoading ?? this.isLoading,
+      error: clearError ? null : error ?? this.error,
       isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      accessToken:     accessToken     ?? this.accessToken,
+      accessToken: accessToken ?? this.accessToken,
     );
   }
 }
@@ -61,25 +61,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final data = await MockData.simulate(MockData.mockLoginResponse);
 
       await _storage.write(
-        key:   AppConstants.secureAccessToken,
+        key: AppConstants.secureAccessToken,
         value: data['access_token'] as String,
       );
       await _storage.write(
-        key:   AppConstants.secureRefreshToken,
+        key: AppConstants.secureRefreshToken,
         value: data['refresh_token'] as String,
       );
 
       state = state.copyWith(
-        isLoading:       false,
+        isLoading: false,
         isAuthenticated: true,
-        accessToken:     data['access_token'] as String,
+        accessToken: data['access_token'] as String,
       );
 
       return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error:     'Invalid email or password.',
+        error: 'Invalid email or password.',
       );
       return false;
     }
@@ -115,7 +115,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error:     'Registration failed. Please try again.',
+        error: 'Registration failed. Please try again.',
       );
       return false;
     }
@@ -141,7 +141,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error:     'Failed to send reset link. Please try again.',
+        error: 'Failed to send reset link. Please try again.',
       );
       return false;
     }
@@ -173,7 +173,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        error:     'Failed to reset password. Please try again.',
+        error: 'Failed to reset password. Please try again.',
       );
       return false;
     }
@@ -200,7 +200,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (token != null) {
       state = state.copyWith(
         isAuthenticated: true,
-        accessToken:     token,
+        accessToken: token,
       );
       return true;
     }

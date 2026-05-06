@@ -1,18 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
+import 'package:securemail/features/mailbox_detail/widgets/reclassify_sheet.dart';
+import 'package:go_router/go_router.dart';
+import 'package:securemail/core/router/app_router.dart';
 
-class MessageDetailScreen extends StatefulWidget {
-  const MessageDetailScreen({super.key, required this.message});
+class MessageDetailScreen extends ConsumerStatefulWidget {
+  const MessageDetailScreen({super.key, required this.message, this.currentFolder});
 
   final MailboxMessage message;
+  final String? currentFolder;
 
   @override
-  State<MessageDetailScreen> createState() => _MessageDetailScreenState();
+  ConsumerState<MessageDetailScreen> createState() =>
+      _MessageDetailScreenState();
 }
 
-class _MessageDetailScreenState extends State<MessageDetailScreen> {
+class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
   bool _senderExpanded = false;
   bool _starred = false;
 
@@ -21,29 +28,52 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
     return Scaffold(
       backgroundColor: context.bgColor,
       appBar: _buildAppBar(context),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SubjectRow(
-              message: widget.message,
-              starred: _starred,
-              onStarTap: () => setState(() => _starred = !_starred),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _SubjectRow(
+                    message: widget.message,
+                    starred: _starred,
+                    onStarTap: () => setState(() => _starred = !_starred),
+                  ),
+                  _SenderCard(
+                    message: widget.message,
+                    expanded: _senderExpanded,
+                    onExpandTap: () =>
+                        setState(() => _senderExpanded = !_senderExpanded),
+                  ),
+                  const _Divider(),
+                  _MessageBody(message: widget.message),
+                  const SizedBox(height: 32),
+                ],
+              ),
             ),
-            _SenderCard(
-              message: widget.message,
-              expanded: _senderExpanded,
-              onExpandTap: () =>
-                  setState(() => _senderExpanded = !_senderExpanded),
+          ),
+          if (widget.currentFolder != 'Sent')
+            Container(
+              padding: const EdgeInsets.only(bottom: 8),
+              decoration: BoxDecoration(
+                color: context.bgColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: SafeArea(
+                child: _ActionButtons(
+                  message: widget.message,
+                  currentFolder: widget.currentFolder,
+                ),
+              ),
             ),
-            const _Divider(),
-            _MessageBody(message: widget.message),
-            const SizedBox(height: 32),
-            const _Divider(),
-            _ActionButtons(message: widget.message),
-            const SizedBox(height: 40),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -65,14 +95,29 @@ class _MessageDetailScreenState extends State<MessageDetailScreen> {
           icon: Icon(Icons.archive_outlined, color: context.text2, size: 22),
         ),
         IconButton(
-          onPressed: () {},
+          onPressed: () async {
+            await ref
+                .read(messagesProvider.notifier)
+                .deleteMessage(widget.message);
+            if (context.mounted) {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Message deleted'),
+                  backgroundColor: Color(0xFFFF5252),
+                ),
+              );
+            }
+          },
           tooltip: 'Delete',
-          icon: Icon(Icons.delete_outline_rounded, color: context.text2, size: 22),
+          icon: Icon(Icons.delete_outline_rounded,
+              color: context.text2, size: 22),
         ),
         IconButton(
           onPressed: () {},
           tooltip: 'Mark as unread',
-          icon: Icon(Icons.mail_outline_rounded, color: context.text2, size: 22),
+          icon:
+              Icon(Icons.mail_outline_rounded, color: context.text2, size: 22),
         ),
         IconButton(
           onPressed: () => _showMoreMenu(context),
@@ -202,10 +247,13 @@ class _SenderCard extends StatelessWidget {
                       children: [
                         Text(
                           'to me',
-                          style: AppTextStyles.bodyS.copyWith(color: context.text3),
+                          style: AppTextStyles.bodyS
+                              .copyWith(color: context.text3),
                         ),
                         Icon(
-                          expanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+                          expanded
+                              ? Icons.arrow_drop_up
+                              : Icons.arrow_drop_down,
                           color: context.text3,
                           size: 18,
                         ),
@@ -234,7 +282,8 @@ class _SenderCard extends StatelessWidget {
               IconButton(
                 onPressed: () {},
                 visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.more_vert_rounded, color: context.text3, size: 20),
+                icon: Icon(Icons.more_vert_rounded,
+                    color: context.text3, size: 20),
               ),
             ],
           ),
@@ -261,13 +310,15 @@ class _DetailRow extends StatelessWidget {
             width: 36,
             child: Text(
               label,
-              style: AppTextStyles.bodyS.copyWith(color: context.text3, fontSize: 12),
+              style: AppTextStyles.bodyS
+                  .copyWith(color: context.text3, fontSize: 12),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: AppTextStyles.bodyS.copyWith(color: context.text2, fontSize: 12),
+              style: AppTextStyles.bodyS
+                  .copyWith(color: context.text2, fontSize: 12),
             ),
           ),
         ],
@@ -293,7 +344,8 @@ class _SecurityBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.verified_user_rounded, size: 11, color: message.badgeColor),
+          Icon(Icons.verified_user_rounded,
+              size: 11, color: message.badgeColor),
           const SizedBox(width: 5),
           Text(
             message.badgeLabel,
@@ -339,26 +391,60 @@ class _MessageBody extends StatelessWidget {
 // ── Action Buttons ─────────────────────────────────────────
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.message});
+  const _ActionButtons({required this.message, this.currentFolder});
 
   final MailboxMessage message;
+  final String? currentFolder;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          _GmailButton(onPressed: () {}, icon: Icons.reply_rounded, label: 'Reply'),
-          const SizedBox(width: 8),
-          _GmailButton(onPressed: () {}, icon: Icons.reply_all_rounded, label: 'Reply all'),
-          const SizedBox(width: 8),
-          _GmailButton(onPressed: () {}, icon: Icons.forward_rounded, label: 'Forward'),
+          _GmailButton(
+            onPressed: () {
+              String recipient = message.sender;
+              if (recipient.contains('<') && recipient.contains('>')) {
+                recipient = recipient.split('<')[1].split('>')[0];
+              }
+              context.push(
+                AppRoutes.compose,
+                extra: {
+                  'recipient': recipient,
+                  'subject': 'Re: ${message.subject}',
+                },
+              );
+            },
+            icon: Icons.reply_rounded,
+            label: 'Reply',
+          ),
+          const SizedBox(width: 12),
+          _GmailButton(
+            onPressed: () => _showReclassifyMenu(context),
+            icon: Icons.security_rounded,
+            label: 'Reclassified',
+          ),
         ],
       ),
     );
   }
+
+  void _showReclassifyMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.card1,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => ReclassifySheet(
+        message: message,
+        currentFolder: currentFolder ?? 'Inbox',
+      ),
+    );
+  }
 }
+
 
 class _GmailButton extends StatelessWidget {
   const _GmailButton({
@@ -386,7 +472,8 @@ class _GmailButton extends StatelessWidget {
           foregroundColor: context.text2,
           side: BorderSide(color: context.fieldBorder.withValues(alpha: 0.4)),
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           alignment: Alignment.center,
         ),
       ),

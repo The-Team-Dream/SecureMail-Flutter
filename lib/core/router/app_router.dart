@@ -215,15 +215,30 @@ final appRouter = GoRouter(
     // ── Add Mailbox Flow ──────────────────────────────────────
     GoRoute(
       path: AppRoutes.compose,
-      builder: (context, state) => const ComposeScreen(),
+      builder: (context, state) {
+        if (state.extra is Map<String, dynamic>) {
+          final extra = state.extra as Map<String, dynamic>;
+          return ComposeScreen(
+            initialRecipient: extra['recipient'] as String?,
+            initialSubject: extra['subject'] as String?,
+          );
+        }
+        return const ComposeScreen();
+      },
     ),
     GoRoute(
       path: AppRoutes.messageDetail,
       builder: (context, state) {
+        if (state.extra is Map<String, dynamic>) {
+          final extra = state.extra as Map<String, dynamic>;
+          final message = extra['message'] as MailboxMessage;
+          final folder = extra['folder'] as String?;
+          return MessageDetailScreen(message: message, currentFolder: folder);
+        }
         final message = state.extra as MailboxMessage;
         return MessageDetailScreen(message: message);
       },
-),
+    ),
   ],
 
   // ── Error Page ────────────────────────────────────────────

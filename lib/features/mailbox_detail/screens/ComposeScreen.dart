@@ -1,23 +1,39 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/core/mock/mock_data.dart';
 
-class ComposeScreen extends StatefulWidget {
-  const ComposeScreen({super.key});
+class ComposeScreen extends ConsumerStatefulWidget {
+  const ComposeScreen({super.key, this.initialRecipient, this.initialSubject});
+
+  final String? initialRecipient;
+  final String? initialSubject;
 
   @override
-  State<ComposeScreen> createState() => _ComposeScreenState();
+  ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
 }
 
-class _ComposeScreenState extends State<ComposeScreen> {
+class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
 
   bool _isSending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialRecipient != null) {
+      _toController.text = widget.initialRecipient!;
+    }
+    if (widget.initialSubject != null) {
+      _subjectController.text = widget.initialSubject!;
+    }
+  }
 
   @override
   void dispose() {
@@ -50,6 +66,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
       await MockData.simulate(true, milliseconds: 1200);
 
       final msg = MailboxMessage(
+        id: 'msg_sent_${DateTime.now().millisecondsSinceEpoch}',
         initials: to[0].toUpperCase(),
         sender: 'To: $to',
         subject: _subjectController.text.trim().isNotEmpty
@@ -61,8 +78,8 @@ class _ComposeScreenState extends State<ComposeScreen> {
         badgeColor: const Color(0xFF8CEB2F),
       );
 
-      // Add to our mock list so the Sent screen shows it
-      MailboxMockMessages.sent.insert(0, msg);
+      // Add to our provider so the Sent screen shows it
+      ref.read(messagesProvider.notifier).addSentMessage(msg);
 
       if (mounted) {
         context.go('/mailboxes/sent');
