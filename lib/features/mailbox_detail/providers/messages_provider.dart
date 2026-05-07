@@ -1,137 +1,225 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:securemail/core/network/api_client.dart';
+import 'package:securemail/core/constants/ApiConstants.dart';
+import 'package:securemail/features/mailbox_detail/models/email_model.dart';
+import 'package:securemail/features/mailbox_detail/models/paginated_emails_model.dart';
+import 'package:dio/dio.dart';
+import 'dart:io';
+
+// ── State ──────────────────────────────────────────────────
+
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 
 class MessagesState {
-  final List<MailboxMessage> inbox;
-  final List<MailboxMessage> sent;
-  final List<MailboxMessage> spam;
-  final List<MailboxMessage> malware;
-  final List<MailboxMessage> phishing;
-
-  MessagesState({
-    required this.inbox,
-    required this.sent,
-    required this.spam,
-    required this.malware,
-    required this.phishing,
+  const MessagesState({
+    this.isLoading = false,
+    this.error,
+    this.inbox = const [],
+    this.sent = const [],
+    this.spam = const [],
+    this.malware = const [],
+    this.phishing = const [],
+    this.trash = const [],
+    this.searchResult = const [],
+    this.selectedEmail,
   });
 
+  final bool isLoading;
+  final String? error;
+  final List<EmailModel> inbox;
+  final List<EmailModel> sent;
+  final List<EmailModel> spam;
+  final List<EmailModel> malware;
+  final List<EmailModel> phishing;
+  final List<EmailModel> trash;
+  final List<EmailModel> searchResult;
+  final EmailModel? selectedEmail;
+
+  // ── UI Compatibility Getters ──────────────────────────────
+
+  List<MailboxMessage> get inboxMessages => inbox.map((e) => e.toMailboxMessage()).toList();
+  List<MailboxMessage> get sentMessages => sent.map((e) => e.toMailboxMessage()).toList();
+  List<MailboxMessage> get spamMessages => spam.map((e) => e.toMailboxMessage()).toList();
+  List<MailboxMessage> get malwareMessages => malware.map((e) => e.toMailboxMessage()).toList();
+  List<MailboxMessage> get phishingMessages => phishing.map((e) => e.toMailboxMessage()).toList();
+  List<MailboxMessage> get trashMessages => trash.map((e) => e.toMailboxMessage()).toList();
+
   MessagesState copyWith({
-    List<MailboxMessage>? inbox,
-    List<MailboxMessage>? sent,
-    List<MailboxMessage>? spam,
-    List<MailboxMessage>? malware,
-    List<MailboxMessage>? phishing,
+    bool? isLoading,
+    String? error,
+    List<EmailModel>? inbox,
+    List<EmailModel>? sent,
+    List<EmailModel>? spam,
+    List<EmailModel>? malware,
+    List<EmailModel>? phishing,
+    List<EmailModel>? trash,
+    List<EmailModel>? searchResult,
+    EmailModel? selectedEmail,
+    bool clearError = false,
+    bool clearSelected = false,
   }) {
     return MessagesState(
-      inbox: inbox ?? this.inbox,
-      sent: sent ?? this.sent,
-      spam: spam ?? this.spam,
-      malware: malware ?? this.malware,
-      phishing: phishing ?? this.phishing,
+      isLoading:    isLoading    ?? this.isLoading,
+      error:        clearError   ? null : error ?? this.error,
+      inbox:        inbox        ?? this.inbox,
+      sent:         sent         ?? this.sent,
+      spam:         spam         ?? this.spam,
+      malware:      malware      ?? this.malware,
+      phishing:     phishing     ?? this.phishing,
+      trash:        trash        ?? this.trash,
+      searchResult: searchResult ?? this.searchResult,
+      selectedEmail: clearSelected ? null : selectedEmail ?? this.selectedEmail,
     );
   }
 }
+
+// ── Notifier ───────────────────────────────────────────────
 
 class MessagesNotifier extends StateNotifier<MessagesState> {
-  MessagesNotifier()
-      : super(MessagesState(
-          inbox: List.from(MailboxMockMessages.inbox),
-          sent: List.from(MailboxMockMessages.sent),
-          spam: List.from(MailboxMockMessages.spam),
-          malware: List.from(MailboxMockMessages.malware),
-          phishing: List.from(MailboxMockMessages.phishing),
-        ));
+  MessagesNotifier() : super(const MessagesState());
 
-  Future<void> reclassifyMessage(
-      MailboxMessage message, String targetFolder) async {
-    // 1. Determine current folder and remove message
-    List<MailboxMessage> newInbox = List.from(state.inbox);
-    List<MailboxMessage> newSent = List.from(state.sent);
-    List<MailboxMessage> newSpam = List.from(state.spam);
-    List<MailboxMessage> newMalware = List.from(state.malware);
-    List<MailboxMessage> newPhishing = List.from(state.phishing);
+  // ── Fetch Folders ─────────────────────────────────────────
 
-    bool removed = false;
-    
-    if (newInbox.any((m) => m.id == message.id)) {
-      newInbox.removeWhere((m) => m.id == message.id);
-      removed = true;
-    } else if (newSent.any((m) => m.id == message.id)) {
-      newSent.removeWhere((m) => m.id == message.id);
-      removed = true;
-    } else if (newSpam.any((m) => m.id == message.id)) {
-      newSpam.removeWhere((m) => m.id == message.id);
-      removed = true;
-    } else if (newMalware.any((m) => m.id == message.id)) {
-      newMalware.removeWhere((m) => m.id == message.id);
-      removed = true;
-    } else if (newPhishing.any((m) => m.id == message.id)) {
-      newPhishing.removeWhere((m) => m.id == message.id);
-      removed = true;
+  Future<void> fetchInbox(int mailboxId, {int page = 1}) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await ApiClient.get(ApiConstants.inbox(mailboxId), queryParameters: {'page': page});
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(isLoading: false, inbox: paginated.data);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
-
-    if (!removed) return;
-
-    // 2. Add to target folder
-    final target = targetFolder.toLowerCase();
-    if (target == 'inbox' || target == 'clean / safe') {
-      newInbox.insert(0, message);
-    } else if (target == 'spam') {
-      newSpam.insert(0, message);
-    } else if (target == 'malware') {
-      newMalware.insert(0, message);
-    } else if (target == 'phishing') {
-      newPhishing.insert(0, message);
-    }
-
-    state = state.copyWith(
-      inbox: newInbox,
-      sent: newSent,
-      spam: newSpam,
-      malware: newMalware,
-      phishing: newPhishing,
-    );
-
-    // 3. Notify Backend (Simulated API call)
-    // In a real app, this would be: await _api.moveMessage(message.id, targetFolder);
-    print('BACKEND NOTIFICATION: Message ${message.id} moved to $targetFolder');
-    
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
   }
 
-  Future<void> deleteMessage(MailboxMessage message) async {
-    List<MailboxMessage> newInbox = List.from(state.inbox);
-    List<MailboxMessage> newSent = List.from(state.sent);
-    List<MailboxMessage> newSpam = List.from(state.spam);
-    List<MailboxMessage> newMalware = List.from(state.malware);
-    List<MailboxMessage> newPhishing = List.from(state.phishing);
-
-    newInbox.removeWhere((m) => m.id == message.id);
-    newSent.removeWhere((m) => m.id == message.id);
-    newSpam.removeWhere((m) => m.id == message.id);
-    newMalware.removeWhere((m) => m.id == message.id);
-    newPhishing.removeWhere((m) => m.id == message.id);
-
-    state = state.copyWith(
-      inbox: newInbox,
-      sent: newSent,
-      spam: newSpam,
-      malware: newMalware,
-      phishing: newPhishing,
-    );
-
-    print('BACKEND NOTIFICATION: Message ${message.id} deleted');
-    await Future.delayed(const Duration(milliseconds: 300));
+  Future<void> fetchSent(int mailboxId) async {
+    try {
+      final response = await ApiClient.get(ApiConstants.sent(mailboxId));
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(sent: paginated.data);
+    } catch (_) {}
   }
 
-  void addSentMessage(MailboxMessage message) {
-    state = state.copyWith(sent: [message, ...state.sent]);
+  Future<void> fetchSpam(int mailboxId) async {
+    try {
+      final response = await ApiClient.get(ApiConstants.spam(mailboxId));
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(spam: paginated.data);
+    } catch (_) {}
+  }
+
+  Future<void> fetchPhishing(int mailboxId) async {
+    try {
+      final response = await ApiClient.get(ApiConstants.phishing(mailboxId));
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(phishing: paginated.data);
+    } catch (_) {}
+  }
+
+  Future<void> fetchMalware(int mailboxId) async {
+    try {
+      final response = await ApiClient.get(ApiConstants.malware(mailboxId));
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(malware: paginated.data);
+    } catch (_) {}
+  }
+
+  Future<void> search(int mailboxId, String query) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await ApiClient.get(
+        ApiConstants.searchEmails(mailboxId), 
+        queryParameters: {'q': query},
+      );
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(isLoading: false, searchResult: paginated.data);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> fetchEmailDetail(int mailboxId, int emailId) async {
+    state = state.copyWith(isLoading: true, clearError: true, clearSelected: true);
+    try {
+      final response = await ApiClient.get(ApiConstants.emailById(mailboxId, emailId));
+      final email = EmailModel.fromJson(response.data['data']);
+      state = state.copyWith(isLoading: false, selectedEmail: email);
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  void clearSelected() {
+    state = state.copyWith(clearSelected: true);
+  }
+
+  // ── Actions ───────────────────────────────────────────────
+
+  Future<bool> markRead(int mailboxId, int emailId, bool read) async {
+    try {
+      await ApiClient.patch(ApiConstants.markEmailRead(mailboxId, emailId), data: {'read': read});
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> deleteMessage(int mailboxId, int emailId) async {
+    try {
+      await ApiClient.delete(ApiConstants.deleteEmail(mailboxId, emailId));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> reclassifyMessage(int mailboxId, int emailId, String targetFolder) async {
+    try {
+      await ApiClient.patch(
+        ApiConstants.reclassifyEmail(mailboxId, emailId),
+        data: {'folder': targetFolder.toLowerCase()},
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // ── Send ──────────────────────────────────────────────────
+
+  Future<bool> sendEmail({
+    required int mailboxId,
+    required String to,
+    required String subject,
+    String? bodyText,
+    String? bodyHtml,
+    List<File>? attachments,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final Map<String, dynamic> map = {
+        'to':       to,
+        'subject':  subject,
+        'bodyText': bodyText,
+        'bodyHtml': bodyHtml,
+      };
+
+      if (attachments != null && attachments.isNotEmpty) {
+        map['attachments'] = await Future.wait(attachments.map((f) => MultipartFile.fromFile(f.path)));
+      }
+
+      final formData = FormData.fromMap(map);
+      await ApiClient.post(ApiConstants.sendEmail(mailboxId), data: formData);
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
   }
 }
 
-final messagesProvider =
-    StateNotifierProvider<MessagesNotifier, MessagesState>((ref) {
+// ── Provider ───────────────────────────────────────────────
+
+final messagesProvider = StateNotifierProvider<MessagesNotifier, MessagesState>((ref) {
   return MessagesNotifier();
 });

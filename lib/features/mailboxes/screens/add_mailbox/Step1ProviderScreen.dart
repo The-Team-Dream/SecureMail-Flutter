@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox_shared_widgets.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox/Step2ImapScreen.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:securemail/core/router/app_router.dart';
+
 
 import 'package:securemail/core/extensions/context_snack_bar.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox/step_scaffold.dart';
@@ -44,14 +49,15 @@ class _Step1ProviderScreenState extends ConsumerState<Step1ProviderScreen> {
     super.dispose();
   }
 
-  void _next() {
-    if (_nameCtrl.text.trim().isEmpty) {
+  Future<void> _next() async {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
       context.showSnackBar('Please enter a mailbox name', isError: true);
       return;
     }
 
     ref.read(addMailboxFormProvider.notifier).updateStep1(
-          displayName: _nameCtrl.text.trim(),
+          displayName: name,
           provider: _selected,
         );
 
@@ -59,9 +65,41 @@ class _Step1ProviderScreenState extends ConsumerState<Step1ProviderScreen> {
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const Step2ImapScreen()));
     } else {
-      context.showSnackBar('OAuth integration coming soon', isError: true);
+      // OAuth Flow
+      final providerPath = _selected == MailboxProvider.gmail ? 'gmail' : 'outlook';
+      
+      // Handle Platform-specific Redirect URI
+      String redirectUri;
+      if (kIsWeb) {
+        redirectUri = '${Uri.base.origin}/mailboxes/$providerPath/callback';
+      } else {
+        // Deep link for Mobile
+        redirectUri = 'securemail://mailboxes/$providerPath/callback';
+      }
+      
+      final authUrl = await ref
+          .read(mailboxesProvider.notifier)
+          .getOAuthUrl(_selected, redirectUri);
+
+
+
+      if (authUrl != null) {
+        final uri = Uri.parse(authUrl);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          if (mounted) {
+            context.showSnackBar('Could not launch login page', isError: true);
+          }
+        }
+      } else {
+        if (mounted) {
+          context.showSnackBar('Failed to initialize connection', isError: true);
+        }
+      }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

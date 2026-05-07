@@ -4,17 +4,33 @@ import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 import 'package:securemail/features/mailbox_detail/widgets/mailbox_folder_scaffold.dart';
 
-class SpamScreen extends ConsumerWidget {
-  const SpamScreen({super.key});
+class SpamScreen extends ConsumerStatefulWidget {
+  final int mailboxId;
+  const SpamScreen({super.key, required this.mailboxId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final messages = ref.watch(messagesProvider).spam;
+  ConsumerState<SpamScreen> createState() => _SpamScreenState();
+}
+
+class _SpamScreenState extends ConsumerState<SpamScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(messagesProvider.notifier).fetchSpam(widget.mailboxId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(messagesProvider);
+    final messages = state.spamMessages;
 
     return MailboxFolderScaffold(
       title: 'Spam',
-      activeRoute: AppRoutes.spam,
+      activeRoute: AppRoutes.spam(widget.mailboxId),
       messages: messages,
+      mailboxId: widget.mailboxId,
     );
   }
 }

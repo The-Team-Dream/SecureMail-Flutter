@@ -63,8 +63,15 @@ class ReclassifySheet extends ConsumerWidget {
                 style: AppTextStyles.bodyL.copyWith(color: context.text1),
               ),
               onTap: () async {
+                final mbId = message.mailboxId;
+                if (mbId == null) return;
+                
                 // Perform actual move
-                await ref.read(messagesProvider.notifier).reclassifyMessage(message, opt.$2);
+                await ref.read(messagesProvider.notifier).reclassifyMessage(
+                  mbId, 
+                  int.parse(message.id), 
+                  opt.$2,
+                );
                 
                 if (context.mounted) {
                   Navigator.pop(context); // Close sheet
@@ -89,7 +96,13 @@ class ReclassifySheet extends ConsumerWidget {
               style: AppTextStyles.bodyL.copyWith(color: const Color(0xFFFF5252)),
             ),
             onTap: () async {
-              await ref.read(messagesProvider.notifier).deleteMessage(message);
+              final mbId = message.mailboxId;
+              if (mbId == null) return;
+
+              await ref.read(messagesProvider.notifier).deleteMessage(
+                mbId, 
+                int.parse(message.id),
+              );
               if (context.mounted) {
                 Navigator.pop(context); // Close sheet
                 onMoved?.call();

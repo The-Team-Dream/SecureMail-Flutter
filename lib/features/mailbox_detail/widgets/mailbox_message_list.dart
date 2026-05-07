@@ -11,12 +11,14 @@ class MailboxMessageList extends StatelessWidget {
     super.key,
     required this.messages,
     required this.folderName,
+    required this.mailboxId,
     this.emptyTitle = 'No messages',
     this.showRiskBadge = true,
   });
 
   final List<MailboxMessage> messages;
   final String folderName;
+  final int mailboxId;
   final String emptyTitle;
   final bool showRiskBadge;
 
@@ -41,6 +43,7 @@ class MailboxMessageList extends StatelessWidget {
         return _MessageTile(
           message: messages[index],
           folderName: folderName,
+          mailboxId: mailboxId,
           showRiskBadge: showRiskBadge,
         );
       },
@@ -59,18 +62,20 @@ class _MessageTile extends StatelessWidget {
   const _MessageTile({
     required this.message,
     required this.folderName,
+    required this.mailboxId,
     this.showRiskBadge = true,
   });
 
   final MailboxMessage message;
   final String folderName;
+  final int mailboxId;
   final bool showRiskBadge;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: () => context.push(
-        AppRoutes.messageDetail,
+        AppRoutes.messageDetail(mailboxId),
         extra: {'message': message, 'folder': folderName},
       ),
       onLongPress: folderName == 'Sent' ? null : () => _showReclassifySheet(context),

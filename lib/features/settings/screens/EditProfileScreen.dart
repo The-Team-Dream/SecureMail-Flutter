@@ -8,7 +8,8 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/utils/validators.dart';
-import 'package:securemail/features/profile/screens/profile_provider.dart';
+import 'package:securemail/features/profile/providers/profile_provider.dart';
+
 import 'package:securemail/shared/widgets/app_border_outline.dart';
 import 'package:securemail/shared/widgets/app_primary_button.dart';
 import 'package:securemail/shared/widgets/auth_gradient_background.dart';
@@ -266,6 +267,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             child: (state.localImage == null && profile?.avatarUrl == null)
                 ? Icon(Icons.person, size: 56, color: context.button1)
                 : null,
+
           ),
 
           // Loading Overlay
@@ -310,7 +312,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Future<void> _pickAndUploadImage() async {
     final state = ref.read(profileProvider);
-    final hasImage = state.localImage != null || state.profile?.avatarUrl != null;
+    final hasImage = state.localImage != null || state.profile?.avatar != null;
+
 
     final picker = ImagePicker();
     final action = await showModalBottomSheet<String>(
@@ -349,9 +352,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (action == null) return;
 
     if (action == 'delete') {
-      await ref.read(profileProvider.notifier).deleteAvatar();
+      await ref.read(profileProvider.notifier).removeAvatar();
       return;
     }
+
 
     final source = action == 'camera' ? ImageSource.camera : ImageSource.gallery;
     final pickedFile = await picker.pickImage(
@@ -364,7 +368,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (pickedFile != null) {
       await ref
           .read(profileProvider.notifier)
-          .updateAvatar(File(pickedFile.path));
+          .updateAvatar(pickedFile);
     }
   }
 

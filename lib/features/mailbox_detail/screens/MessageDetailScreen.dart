@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:securemail/features/mailbox_detail/models/email_model.dart';
 import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/features/mailbox_detail/widgets/reclassify_sheet.dart';
-import 'package:go_router/go_router.dart';
+import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:securemail/features/mailbox_detail/models/email_model.dart';
 import 'package:securemail/core/router/app_router.dart';
 
 class MessageDetailScreen extends ConsumerStatefulWidget {
-  const MessageDetailScreen({super.key, required this.message, this.currentFolder});
+  const MessageDetailScreen({
+    super.key, 
+    required this.message, 
+    this.currentFolder,
+    required this.mailboxId,
+  });
 
   final MailboxMessage message;
   final String? currentFolder;
+  final int mailboxId;
 
   @override
   ConsumerState<MessageDetailScreen> createState() =>
@@ -24,35 +35,71 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
   bool _starred = false;
 
   @override
+  void initState() {
+    super.initState();
+    _starred = !widget.message.isActive; // simple mock for star state or use real flag if available
+    
+    Future.microtask(() {
+      ref.read(messagesProvider.notifier).fetchEmailDetail(
+        widget.mailboxId, 
+        int.parse(widget.message.id),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    // Clear selection so next time we open another email we don't see old content briefly
+    Future.microtask(() {
+      ref.read(messagesProvider.notifier).clearSelected();
+    });
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final state = ref.watch(messagesProvider);
+    final email = state.selectedEmail;
+
     return Scaffold(
       backgroundColor: context.bgColor,
       appBar: _buildAppBar(context),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _SubjectRow(
-                    message: widget.message,
-                    starred: _starred,
-                    onStarTap: () => setState(() => _starred = !_starred),
+      body: state.isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _SubjectRow(
+                        message: widget.message,
+                        starred: _starred,
+                        onStarTap: () => setState(() => _starred = !_starred),
+                      ),
+                      _SenderCard(
+                        message: widget.message,
+                        expanded: _senderExpanded,
+                        onExpandTap: () =>
+                            setState(() => _senderExpanded = !_senderExpanded),
+                      ),
+                      const _Divider(),
+                      if (email != null) 
+                        _MessageBody(email: email)
+                      else
+                        Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            'Failed to load email content.',
+                            style: AppTextStyles.bodyM.copyWith(color: context.text3),
+                          ),
+                        ),
+                      const SizedBox(height: 32),
+                    ],
                   ),
-                  _SenderCard(
-                    message: widget.message,
-                    expanded: _senderExpanded,
-                    onExpandTap: () =>
-                        setState(() => _senderExpanded = !_senderExpanded),
-                  ),
-                  const _Divider(),
-                  _MessageBody(message: widget.message),
-                  const SizedBox(height: 32),
-                ],
+                ),
               ),
-            ),
-          ),
           if (widget.currentFolder != 'Sent')
             Container(
               padding: const EdgeInsets.only(bottom: 8),
@@ -70,6 +117,7 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
                 child: _ActionButtons(
                   message: widget.message,
                   currentFolder: widget.currentFolder,
+                  mailboxId: widget.mailboxId,
                 ),
               ),
             ),
@@ -96,9 +144,12 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
         ),
         IconButton(
           onPressed: () async {
+            final mailboxId = widget.message.mailboxId;
+            if (mailboxId == null) return;
+
             await ref
                 .read(messagesProvider.notifier)
-                .deleteMessage(widget.message);
+                .deleteMessage(mailboxId, int.parse(widget.message.id));
             if (context.mounted) {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -364,25 +415,88 @@ class _SecurityBadge extends StatelessWidget {
 
 // ── Message Body ───────────────────────────────────────────
 
-class _MessageBody extends StatelessWidget {
-  const _MessageBody({required this.message});
+class _MessageBody extends StatefulWidget {
+  const _MessageBody({required this.email});
 
-  final MailboxMessage message;
+  final EmailModel email;
+
+  @override
+  State<_MessageBody> createState() => _MessageBodyState();
+}
+
+class _MessageBodyState extends State<_MessageBody> {
+  late final WebViewController _controller;
+  bool _isWebViewSupported = !kIsWeb;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isWebViewSupported) {
+      _controller = WebViewController()
+        ..setJavaScriptMode(JavaScriptMode.unrestricted)
+        ..setBackgroundColor(Colors.transparent)
+        ..loadHtmlString(_wrapHtml(widget.email.bodyHtml ?? widget.email.bodyText ?? ''));
+    }
+  }
+
+  String _wrapHtml(String content) {
+    if (content.toLowerCase().contains('<html')) {
+      return content;
+    }
+
+    return """
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-text-size-adjust: 100%;
+    }
+    img { 
+      max-width: 100% !important; 
+      height: auto !important; 
+    }
+    table {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+  </style>
+</head>
+<body>
+  $content
+</body>
+</html>
+""";
+  }
 
   @override
   Widget build(BuildContext context) {
+    final content = widget.email.bodyHtml ?? widget.email.bodyText ?? '(No content)';
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 16, 18, 0),
-      child: Text(
-        '${message.preview}\n\n'
-        'This is a simulated secure message content. In a real application, '
-        'this would be the full decrypted body of the email.\n\n'
-        'SecureMail ensures that your communication remains private and verified.',
-        style: AppTextStyles.bodyL.copyWith(
-          color: context.text2,
-          height: 1.6,
-          fontSize: 15,
-        ),
+      padding: const EdgeInsets.only(top: 8),
+      child: SizedBox(
+        height: 500, // Increased height for better initial view
+        child: _isWebViewSupported 
+          ? WebViewWidget(controller: _controller)
+          : Container(
+              padding: const EdgeInsets.all(18),
+              child: HtmlWidget(
+                content,
+                textStyle: AppTextStyles.bodyL.copyWith(
+                  color: context.text2,
+                  height: 1.6,
+                  fontSize: 15,
+                ),
+              ),
+            ),
       ),
     );
   }
@@ -391,10 +505,15 @@ class _MessageBody extends StatelessWidget {
 // ── Action Buttons ─────────────────────────────────────────
 
 class _ActionButtons extends StatelessWidget {
-  const _ActionButtons({required this.message, this.currentFolder});
+  const _ActionButtons({
+    required this.message, 
+    this.currentFolder,
+    required this.mailboxId,
+  });
 
   final MailboxMessage message;
   final String? currentFolder;
+  final int mailboxId;
 
   @override
   Widget build(BuildContext context) {
@@ -409,7 +528,7 @@ class _ActionButtons extends StatelessWidget {
                 recipient = recipient.split('<')[1].split('>')[0];
               }
               context.push(
-                AppRoutes.compose,
+                AppRoutes.compose(mailboxId),
                 extra: {
                   'recipient': recipient,
                   'subject': 'Re: ${message.subject}',

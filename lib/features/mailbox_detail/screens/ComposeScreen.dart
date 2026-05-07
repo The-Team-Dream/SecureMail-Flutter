@@ -8,10 +8,16 @@ import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/core/mock/mock_data.dart';
 
 class ComposeScreen extends ConsumerStatefulWidget {
-  const ComposeScreen({super.key, this.initialRecipient, this.initialSubject});
+  const ComposeScreen({
+    super.key, 
+    this.initialRecipient, 
+    this.initialSubject,
+    this.mailboxId, // معرف الصندوق المطلوب الإرسال منه
+  });
 
   final String? initialRecipient;
   final String? initialSubject;
+  final int? mailboxId;
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
@@ -57,38 +63,37 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
       return;
     }
 
-    setState(() {
-      _isSending = true;
-    });
+    // نحتاج لمعرف الصندوق، إذا لم يتوفر نأخذ أول صندوق متاح (أو نظهر خطأ)
+    final mbId = widget.mailboxId ?? 1; // الافتراضي 1 للتجربة، يفضل تمريره من الشاشة السابقة
+
+    setState(() => _isSending = true);
 
     try {
-      // Simulate API request to backend to send and save the message
-      await MockData.simulate(true, milliseconds: 1200);
-
-      final msg = MailboxMessage(
-        id: 'msg_sent_${DateTime.now().millisecondsSinceEpoch}',
-        initials: to[0].toUpperCase(),
-        sender: 'To: $to',
-        subject: _subjectController.text.trim().isNotEmpty
+      final success = await ref.read(messagesProvider.notifier).sendEmail(
+        mailboxId: mbId,
+        to:        to,
+        subject:   _subjectController.text.trim().isNotEmpty
             ? _subjectController.text.trim()
             : '(No Subject)',
-        preview: _messageController.text.trim(),
-        timeLabel: 'Just now',
-        badgeLabel: 'SIGNED AND SENT',
-        badgeColor: const Color(0xFF8CEB2F),
+        bodyText:  _messageController.text.trim(),
       );
 
-      // Add to our provider so the Sent screen shows it
-      ref.read(messagesProvider.notifier).addSentMessage(msg);
-
-      if (mounted) {
-        context.go('/mailboxes/sent');
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message sent successfully')),
+        );
+        context.go('/mailboxes/sent'); // العودة لصفحة المرسل كما في التصميم الأصلي
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to send message'),
+            backgroundColor: Color(0xFFFF5252),
+          ),
+        );
       }
     } finally {
       if (mounted) {
-        setState(() {
-          _isSending = false;
-        });
+        setState(() => _isSending = false);
       }
     }
   }

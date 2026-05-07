@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class MailboxMessage {
   const MailboxMessage({
     required this.id,
+    this.mailboxId,
     required this.initials,
     required this.sender,
     required this.subject,
@@ -15,6 +16,7 @@ class MailboxMessage {
   });
 
   final String id;
+  final int? mailboxId;
   final String initials;
   final String sender;
   final String subject;

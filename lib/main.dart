@@ -5,9 +5,15 @@ import 'package:securemail/core/theme/theme_data/ThemeDataLight.dart';
 import 'package:securemail/core/theme/theme_data/ThemeDataDark.dart';
 import 'package:securemail/core/theme/theme_controller.dart';
 
+import 'package:securemail/core/utils/url_strategy_helper.dart'
+    if (dart.library.html) 'package:securemail/core/utils/url_strategy_web.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  usePathStrategy();
   runApp(
+
+
     const ProviderScope(
       child: SecureMail(),
     ),

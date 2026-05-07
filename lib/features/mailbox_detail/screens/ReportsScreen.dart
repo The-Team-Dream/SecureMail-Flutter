@@ -69,8 +69,10 @@ class ReportIncident {
 // ── Reports Screen ─────────────────────────────────────────
 
 class ReportsScreen extends StatefulWidget {
+  final int mailboxId;
   const ReportsScreen({
     super.key,
+    required this.mailboxId,
     this.mailboxEmail = '',
     this.unreadCount,
   });
@@ -183,7 +185,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Scaffold(
       backgroundColor: context.bgColor,
       drawer: MailboxSideDrawer(
-        activeRoute: AppRoutes.reports,
+        activeRoute: AppRoutes.reports(widget.mailboxId),
+        mailboxId: widget.mailboxId,
         mailboxEmail: widget.mailboxEmail,
         unreadCount: widget.unreadCount,
       ),

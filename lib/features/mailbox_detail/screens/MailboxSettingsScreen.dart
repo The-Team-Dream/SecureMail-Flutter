@@ -5,7 +5,8 @@ import 'package:securemail/features/mailbox_detail/widgets/mailbox_side_drawer.d
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 
 class MailboxSettingsScreen extends StatefulWidget {
-  const MailboxSettingsScreen({super.key});
+  final int mailboxId;
+  const MailboxSettingsScreen({super.key, required this.mailboxId});
 
   @override
   State<MailboxSettingsScreen> createState() => _MailboxSettingsScreenState();
@@ -22,7 +23,10 @@ class _MailboxSettingsScreenState extends State<MailboxSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: context.bgColor,
-      drawer: const MailboxSideDrawer(activeRoute: AppRoutes.mailboxSettings),
+      drawer: MailboxSideDrawer(
+        activeRoute: AppRoutes.mailboxSettings(widget.mailboxId),
+        mailboxId: widget.mailboxId,
+      ),
       body: SafeArea(
         bottom: false,
         child: Column(

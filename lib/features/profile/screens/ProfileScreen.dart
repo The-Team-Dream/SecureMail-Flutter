@@ -9,7 +9,9 @@ import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
-import 'package:securemail/features/profile/screens/profile_provider.dart';
+import 'package:securemail/features/profile/providers/profile_provider.dart';
+import 'package:securemail/features/profile/models/user_profile_model.dart';
+
 
 class Profilescreen extends ConsumerWidget {
   const Profilescreen({super.key});
@@ -39,7 +41,8 @@ class Profilescreen extends ConsumerWidget {
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
-              onRefresh: () => ref.read(profileProvider.notifier).refresh(),
+              onRefresh: () => ref.read(profileProvider.notifier).fetchProfile(),
+
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
@@ -152,6 +155,7 @@ class Profilescreen extends ConsumerWidget {
               child: (state.localImage == null && profile?.avatarUrl == null)
                   ? Icon(Icons.person, size: 48, color: context.button1)
                   : null,
+
             ),
 
             // Loading Overlay
@@ -239,7 +243,8 @@ class Profilescreen extends ConsumerWidget {
   // Security Section
   // ══════════════════════════════════════════════════════════
 
-  Widget _buildSecuritySection(BuildContext context, UserProfile? profile) {
+  Widget _buildSecuritySection(BuildContext context, UserProfileModel? profile) {
+
     return _buildCard(
       context: context,
       children: [
@@ -259,7 +264,8 @@ class Profilescreen extends ConsumerWidget {
   // Preferences Section
   // ══════════════════════════════════════════════════════════
 
-  Widget _buildPreferencesSection(BuildContext context, UserProfile? profile) {
+  Widget _buildPreferencesSection(BuildContext context, UserProfileModel? profile) {
+
     final storagePercent = profile?.storageUsedPercent ?? 85;
 
     return _buildCard(

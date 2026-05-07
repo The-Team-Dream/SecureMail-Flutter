@@ -8,11 +8,13 @@ class MailboxSideDrawer extends StatelessWidget {
   const MailboxSideDrawer({
     super.key,
     required this.activeRoute,
+    required this.mailboxId,
     this.mailboxEmail = '',
     this.unreadCount,
   });
 
   final String activeRoute;
+  final int mailboxId;
   final String mailboxEmail;
   final int? unreadCount;
 
@@ -47,7 +49,7 @@ class MailboxSideDrawer extends StatelessWidget {
                       _DrawerItem(
                         icon: Icons.inbox_rounded,
                         label: 'Inbox',
-                        route: AppRoutes.inbox,
+                        route: AppRoutes.inbox(mailboxId),
                         activeRoute: activeRoute,
                         count: unreadCount != null && unreadCount! > 0
                             ? unreadCount.toString()
@@ -56,26 +58,26 @@ class MailboxSideDrawer extends StatelessWidget {
                       _DrawerItem(
                         icon: Icons.send_outlined,
                         label: 'Sent',
-                        route: AppRoutes.sent,
+                        route: AppRoutes.sent(mailboxId),
                         activeRoute: activeRoute,
                       ),
                       _DrawerItem(
                         icon: Icons.report_gmailerrorred_outlined,
                         label: 'Spam',
-                        route: AppRoutes.spam,
+                        route: AppRoutes.spam(mailboxId),
                         activeRoute: activeRoute,
                       ),
                       _DrawerItem(
                         icon: Icons.shield_outlined,
                         label: 'Malware',
-                        route: AppRoutes.malware,
+                        route: AppRoutes.malware(mailboxId),
                         activeRoute: activeRoute,
                         alert: true,
                       ),
                       _DrawerItem(
                         icon: Icons.phishing_outlined,
                         label: 'Phishing',
-                        route: AppRoutes.phishing,
+                        route: AppRoutes.phishing(mailboxId),
                         activeRoute: activeRoute,
                       ),
                       const SizedBox(height: 26),
@@ -86,13 +88,13 @@ class MailboxSideDrawer extends StatelessWidget {
                       _DrawerItem(
                         icon: Icons.analytics_outlined,
                         label: 'Reports',
-                        route: AppRoutes.reports,
+                        route: AppRoutes.reports(mailboxId),
                         activeRoute: activeRoute,
                       ),
                       _DrawerItem(
                         icon: Icons.settings_outlined,
                         label: 'Settings',
-                        route: AppRoutes.mailboxSettings,
+                        route: AppRoutes.mailboxSettings(mailboxId),
                         activeRoute: activeRoute,
                       ),
                     ],

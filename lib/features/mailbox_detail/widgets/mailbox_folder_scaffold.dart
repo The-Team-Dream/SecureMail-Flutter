@@ -13,6 +13,7 @@ class MailboxFolderScaffold extends StatefulWidget {
     required this.title,
     required this.activeRoute,
     required this.messages,
+    required this.mailboxId,
     this.showFilters = false,
     this.trailing,
     this.mailboxEmail = '',
@@ -23,6 +24,7 @@ class MailboxFolderScaffold extends StatefulWidget {
   final String title;
   final String activeRoute;
   final List<MailboxMessage> messages;
+  final int mailboxId;
   final bool showFilters;
   final Widget? trailing;
   final String mailboxEmail;
@@ -52,12 +54,13 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
       backgroundColor: context.bgColor,
       drawer: MailboxSideDrawer(
         activeRoute: widget.activeRoute,
+        mailboxId: widget.mailboxId,
         mailboxEmail: widget.mailboxEmail,
         unreadCount: widget.unreadCount,
       ),
-      floatingActionButton: (widget.activeRoute == AppRoutes.inbox || widget.activeRoute == AppRoutes.sent)
+      floatingActionButton: (widget.activeRoute.contains('/inbox') || widget.activeRoute.contains('/sent'))
           ? FloatingActionButton(
-              onPressed: () => context.push(AppRoutes.compose),
+              onPressed: () => context.push(AppRoutes.compose(widget.mailboxId)),
               backgroundColor: context.button1,
               foregroundColor: Colors.white,
               elevation: 0,
@@ -156,6 +159,7 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
               child: MailboxMessageList(
                 messages: messages,
                 folderName: widget.title,
+                mailboxId: widget.mailboxId,
                 emptyTitle: 'No ${widget.title.toLowerCase()} messages',
                 showRiskBadge: widget.showRiskBadge,
               ),

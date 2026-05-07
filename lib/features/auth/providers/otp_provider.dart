@@ -1,5 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:securemail/core/mock/mock_data.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:securemail/core/constants/AppConstants.dart';
+import 'package:securemail/core/network/api_client.dart';
+import 'package:securemail/core/constants/ApiConstants.dart';
+import 'package:dio/dio.dart';
 
 // ── State ──────────────────────────────────────────────────
 
@@ -13,7 +17,7 @@ class OtpState {
   });
 
   final bool isLoading;
-  final bool isResending; // spinner منفصل لزرار الـ resend
+  final bool isResending;
   final String? error;
   final bool isVerified;
   final bool resendSuccess;
@@ -27,10 +31,10 @@ class OtpState {
     bool clearError = false,
   }) {
     return OtpState(
-      isLoading: isLoading ?? this.isLoading,
-      isResending: isResending ?? this.isResending,
-      error: clearError ? null : error ?? this.error,
-      isVerified: isVerified ?? this.isVerified,
+      isLoading:     isLoading     ?? this.isLoading,
+      isResending:   isResending   ?? this.isResending,
+      error:         clearError    ? null : error ?? this.error,
+      isVerified:    isVerified    ?? this.isVerified,
       resendSuccess: resendSuccess ?? this.resendSuccess,
     );
   }
@@ -41,27 +45,30 @@ class OtpState {
 class OtpNotifier extends StateNotifier<OtpState> {
   OtpNotifier() : super(const OtpState());
 
+  final _storage = const FlutterSecureStorage();
+
   // ── Verify Register OTP ───────────────────────────────────
   /// POST /auth/verify-register-otp
-  /// Body: { email, otp }  ← otp: 6 digits numeric
+  /// Body: { email, otp }
   Future<bool> verifyOtp({
     required String email,
     required String otp,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
-
     try {
-      // TODO: استبدل بـ API call حقيقي
-      // await ApiClient.instance.post(
-      //   ApiConstants.verifyRegisterOtp,
-      //   data: {'email': email, 'otp': otp},
-      // );
-
-      await MockData.simulate(MockData.mockVerifyOtpResponse);
-
+      await ApiClient.post(
+        ApiConstants.verifyRegisterOtp,
+        data: {'email': email, 'otp': otp},
+      );
       state = state.copyWith(isLoading: false, isVerified: true);
       return true;
-    } catch (e) {
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Invalid or expired OTP. Please try again.'),
+      );
+      return false;
+    } catch (_) {
       state = state.copyWith(
         isLoading: false,
         error: 'Invalid or expired OTP. Please try again.',
@@ -71,27 +78,28 @@ class OtpNotifier extends StateNotifier<OtpState> {
   }
 
   // ── Resend OTP ────────────────────────────────────────────
-  /// POST /auth/register (بنبعت التسجيل تاني عشان يبعت OTP جديد)
-  /// أو لو الـ Backend عنده endpoint منفصل نغيره
+  /// POST /auth/resend-otp
+  /// Body: { email }
   Future<bool> resendOtp({required String email}) async {
     state = state.copyWith(
       isResending: true,
       resendSuccess: false,
       clearError: true,
     );
-
     try {
-      // TODO: استبدل بـ API call حقيقي
-      // await ApiClient.instance.post(
-      //   ApiConstants.resendOtp,
-      //   data: {'email': email},
-      // );
-
-      await MockData.simulate({'message': 'OTP resent successfully.'});
-
+      await ApiClient.post(
+        ApiConstants.resendOtp,
+        data: {'email': email},
+      );
       state = state.copyWith(isResending: false, resendSuccess: true);
       return true;
-    } catch (e) {
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isResending: false,
+        error: _extractError(e, 'Failed to resend OTP. Please try again.'),
+      );
+      return false;
+    } catch (_) {
       state = state.copyWith(
         isResending: false,
         error: 'Failed to resend OTP. Please try again.',
@@ -102,8 +110,16 @@ class OtpNotifier extends StateNotifier<OtpState> {
 
   // ── Clear ─────────────────────────────────────────────────
   void clearError() => state = state.copyWith(clearError: true);
-
   void reset() => state = const OtpState();
+
+  // ── Helper ───────────────────────────────────────────────
+  String _extractError(DioException e, String fallback) {
+    try {
+      final data = e.response?.data;
+      if (data is Map) return data['message'] as String? ?? fallback;
+    } catch (_) {}
+    return fallback;
+  }
 }
 
 // ── Provider ───────────────────────────────────────────────

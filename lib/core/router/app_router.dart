@@ -6,6 +6,7 @@ import 'package:securemail/features/auth/screens/RegisterScreen.dart';
 import 'package:securemail/features/auth/screens/ForgotPasswordScreen.dart';
 import 'package:securemail/features/auth/screens/OtpScreen.dart';
 import 'package:securemail/features/dashboard/screens/DashboardScreen.dart';
+import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 import 'package:securemail/features/profile/screens/ProfileScreen.dart';
 import 'package:securemail/features/mailboxes/screens/MailboxesScreen.dart';
 import 'package:securemail/features/alerts/screens/AlertsScreen.dart';
@@ -26,6 +27,8 @@ import 'package:securemail/features/settings/screens/LoggedInDevicesScreen.dart'
 import 'package:securemail/features/settings/screens/NotificationsSettingsScreen.dart';
 import 'package:securemail/features/settings/screens/PrivacySecurityScreen.dart';
 import 'package:securemail/features/settings/screens/SettingsScreen.dart';
+import 'package:securemail/features/mailboxes/screens/add_mailbox/OAuthCallbackScreen.dart';
+
 
 class AppRoutes {
   AppRoutes._();
@@ -44,15 +47,15 @@ class AppRoutes {
   static const alerts = '/alerts';
   static const settings = '/settings';
 
-  static const inbox = '/mailboxes/inbox';
-  static const sent = '/mailboxes/sent';
-  static const spam = '/mailboxes/spam';
-  static const malware = '/mailboxes/malware';
-  static const phishing = '/mailboxes/phishing';
-  static const reports = '/mailboxes/reports';
-  static const mailboxSettings = '/mailboxes/settings';
-  static const compose = '/mailboxes/compose';
-  static const messageDetail = '/mailboxes/message-detail';
+  static String inbox(int id) => '/mailboxes/$id/inbox';
+  static String sent(int id) => '/mailboxes/$id/sent';
+  static String spam(int id) => '/mailboxes/$id/spam';
+  static String malware(int id) => '/mailboxes/$id/malware';
+  static String phishing(int id) => '/mailboxes/$id/phishing';
+  static String reports(int id) => '/mailboxes/$id/reports';
+  static String mailboxSettings(int id) => '/mailboxes/$id/settings';
+  static String compose(int id) => '/mailboxes/$id/compose';
+  static String messageDetail(int id) => '/mailboxes/$id/message-detail';
 
   static const editProfile = '/editProfile';
   static const changePassword = '/changePassword';
@@ -69,7 +72,11 @@ class AppRoutes {
 
   // Keep dashboard as an alias or just use mailboxes
   static const dashboard = mailboxes;
+  
+  static const oauthCallback = '/mailboxes/:provider/callback';
 }
+
+
 
 final appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
@@ -139,32 +146,53 @@ final appRouter = GoRouter(
               builder: (context, state) => const MailboxesScreen(),
               routes: [
                 GoRoute(
-                  path: 'inbox',
-                  builder: (context, state) => const InboxScreen(),
+                  path: ':mailboxId/inbox',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return InboxScreen(mailboxId: id);
+                  },
                 ),
                 GoRoute(
-                  path: 'sent',
-                  builder: (context, state) => const SentScreen(),
+                  path: ':mailboxId/sent',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return SentScreen(mailboxId: id);
+                  },
                 ),
                 GoRoute(
-                  path: 'spam',
-                  builder: (context, state) => const SpamScreen(),
+                  path: ':mailboxId/spam',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return SpamScreen(mailboxId: id);
+                  },
                 ),
                 GoRoute(
-                  path: 'malware',
-                  builder: (context, state) => const MalwareScreen(),
+                  path: ':mailboxId/malware',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return MalwareScreen(mailboxId: id);
+                  },
                 ),
                 GoRoute(
-                  path: 'phishing',
-                  builder: (context, state) => const PhishingScreen(),
+                  path: ':mailboxId/phishing',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return PhishingScreen(mailboxId: id);
+                  },
                 ),
                 GoRoute(
-                  path: 'reports',
-                  builder: (context, state) => const ReportsScreen(),
+                  path: ':mailboxId/reports',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return ReportsScreen(mailboxId: id);
+                  },
                 ),
                 GoRoute(
-                  path: 'settings',
-                  builder: (context, state) => const MailboxSettingsScreen(),
+                  path: ':mailboxId/settings',
+                  builder: (context, state) {
+                    final id = int.parse(state.pathParameters['mailboxId']!);
+                    return MailboxSettingsScreen(mailboxId: id);
+                  },
                 ),
               ],
             ),
@@ -214,32 +242,60 @@ final appRouter = GoRouter(
 
     // ── Add Mailbox Flow ──────────────────────────────────────
     GoRoute(
-      path: AppRoutes.compose,
+      path: '/mailboxes/:mailboxId/compose',
       builder: (context, state) {
+        final mailboxId = int.parse(state.pathParameters['mailboxId']!);
         if (state.extra is Map<String, dynamic>) {
           final extra = state.extra as Map<String, dynamic>;
           return ComposeScreen(
+            mailboxId: mailboxId,
             initialRecipient: extra['recipient'] as String?,
             initialSubject: extra['subject'] as String?,
           );
         }
-        return const ComposeScreen();
+        return ComposeScreen(mailboxId: mailboxId);
       },
     ),
     GoRoute(
-      path: AppRoutes.messageDetail,
+      path: '/mailboxes/:mailboxId/message-detail',
       builder: (context, state) {
+        final mailboxId = int.parse(state.pathParameters['mailboxId']!);
         if (state.extra is Map<String, dynamic>) {
           final extra = state.extra as Map<String, dynamic>;
           final message = extra['message'] as MailboxMessage;
           final folder = extra['folder'] as String?;
-          return MessageDetailScreen(message: message, currentFolder: folder);
+          return MessageDetailScreen(
+            mailboxId: mailboxId,
+            message: message, 
+            currentFolder: folder,
+          );
         }
         final message = state.extra as MailboxMessage;
-        return MessageDetailScreen(message: message);
+        return MessageDetailScreen(
+          mailboxId: mailboxId,
+          message: message,
+        );
       },
     ),
+
+    
+    // ── OAuth Callback ────────────────────────────────────────
+    GoRoute(
+      path: AppRoutes.oauthCallback,
+      builder: (context, state) {
+        final providerStr = state.pathParameters['provider'];
+        final code = state.uri.queryParameters['code'];
+        
+        final provider = providerStr == 'gmail' 
+            ? MailboxProvider.gmail 
+            : MailboxProvider.outlook;
+            
+        return OAuthCallbackScreen(code: code, provider: provider);
+      },
+    ),
+
   ],
+
 
   // ── Error Page ────────────────────────────────────────────
   errorBuilder: (context, state) => Scaffold(

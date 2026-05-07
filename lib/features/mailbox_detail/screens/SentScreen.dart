@@ -4,17 +4,33 @@ import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 import 'package:securemail/features/mailbox_detail/widgets/mailbox_folder_scaffold.dart';
 
-class SentScreen extends ConsumerWidget {
-  const SentScreen({super.key});
+class SentScreen extends ConsumerStatefulWidget {
+  final int mailboxId;
+  const SentScreen({super.key, required this.mailboxId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final messages = ref.watch(messagesProvider).sent;
+  ConsumerState<SentScreen> createState() => _SentScreenState();
+}
+
+class _SentScreenState extends ConsumerState<SentScreen> {
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(messagesProvider.notifier).fetchSent(widget.mailboxId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(messagesProvider);
+    final messages = state.sentMessages;
 
     return MailboxFolderScaffold(
       title: 'Sent',
-      activeRoute: AppRoutes.sent,
+      activeRoute: AppRoutes.sent(widget.mailboxId),
       messages: messages,
+      mailboxId: widget.mailboxId,
     );
   }
 }

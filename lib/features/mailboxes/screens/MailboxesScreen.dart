@@ -196,7 +196,7 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
                                 const EdgeInsets.only(bottom: AppSpacing.x2),
                             child: _MailboxCard(
                               mailbox: m,
-                              onTap: () => context.go(AppRoutes.inbox),
+                              onTap: () => context.go(AppRoutes.inbox(m.id)),
                               onRemove: () => ref
                                   .read(mailboxesProvider.notifier)
                                   .removeMailbox(m.id),

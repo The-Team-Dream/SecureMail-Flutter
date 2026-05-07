@@ -1,8 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:securemail/core/enums/encryption_mode.dart';
+import 'package:securemail/core/network/api_client.dart';
+import 'package:securemail/core/constants/ApiConstants.dart';
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
+import 'package:dio/dio.dart';
+import 'package:securemail/core/enums/encryption_mode.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-// ─── Mailboxes State ──────────────────────────────────────
+
+
+// ── State ──────────────────────────────────────────────────
 
 class MailboxesState {
   const MailboxesState({
@@ -24,183 +30,269 @@ class MailboxesState {
     return MailboxesState(
       mailboxes: mailboxes ?? this.mailboxes,
       isLoading: isLoading ?? this.isLoading,
-      error: clearError ? null : error ?? this.error,
+      error:     clearError ? null : error ?? this.error,
     );
   }
 
-  int get activeCount =>
-      mailboxes.where((m) => m.syncStatus != MailboxSyncStatus.reauth).length;
+  int get activeCount => mailboxes.where((m) => m.isActive).length;
 }
 
-// ─── Mailboxes Notifier ────────────────────────────────────
+// ── Notifier ───────────────────────────────────────────────
 
 class MailboxesNotifier extends StateNotifier<MailboxesState> {
   MailboxesNotifier() : super(const MailboxesState()) {
-    _loadInitialMailboxes();
+    fetchMailboxes();
   }
 
-  void _loadInitialMailboxes() {
-    // TODO: Replace with real API call — load mailboxes from backend.
-  }
-
-  /// Creates a new mailbox with optimistic UI update.
-  ///
-  /// 1. Adds a temporary mailbox locally (syncing state).
-  /// 2. Sends data to the backend.
-  /// 3. On success, replaces the temp ID with the real one.
-  /// 4. On failure, marks the mailbox as error.
-  Future<bool> addMailbox(AddMailboxFormData data) async {
-    final tempId = 'mailbox_${DateTime.now().millisecondsSinceEpoch}';
-
-    final newMailbox = MailboxModel(
-      id: tempId,
-      displayName: data.displayName ?? data.email ?? 'New Mailbox',
-      email: data.email ?? '',
-      provider: data.provider ?? MailboxProvider.imap,
-      syncStatus: MailboxSyncStatus.syncing,
-      syncProgress: 0.0,
-      imapHost: data.imapHost,
-      imapPort: data.imapPort,
-      imapEncryption: data.imapEncryption,
-      smtpHost: data.smtpHost,
-      smtpPort: data.smtpPort,
-      smtpEncryption: data.smtpEncryption,
-      syncFrequency: data.syncFrequency,
-      fetchLimit: data.fetchLimit,
-      securityScanEnabled: data.securityScanEnabled,
-    );
-
-    // Optimistic update — show immediately in UI.
-    state = state.copyWith(mailboxes: [...state.mailboxes, newMailbox]);
-
+  // ── Fetch Mailboxes ───────────────────────────────────────
+  /// GET /mailboxes
+  Future<void> fetchMailboxes() async {
+    state = state.copyWith(isLoading: true, clearError: true);
     try {
-      // TODO: Replace with real API call.
-      // Example:
-      //   final res = await _dio.post('/mailboxes', data: data.toJson());
-      //   final realId = res.data['id'] as String;
-      //   _finalizeMailbox(tempId, realId);
+      final response = await ApiClient.get(ApiConstants.mailboxes);
+      final List<dynamic> data = response.data['data'];
+      state = state.copyWith(
+        isLoading: false,
+        mailboxes: data.map((m) => MailboxModel.fromJson(m)).toList(),
+      );
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Failed to load mailboxes.'),
+      );
+    } catch (_) {
+      state = state.copyWith(isLoading: false, error: 'Failed to load mailboxes.');
+    }
+  }
 
-      // ── Simulated progress (remove when API is ready) ──
-      await Future.delayed(const Duration(milliseconds: 600));
-      _updateSyncProgress(tempId, 0.30);
+  // ── Add Mailbox ───────────────────────────────────────────
+  /// POST /mailboxes/imap
+  Future<bool> addMailbox(AddMailboxFormData data) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      // Map form data to backend DTO
+      final payload = {
+        'host':        data.imapHost,
+        'port':        data.imapPort,
+        'email':       data.email,
+        'password':    data.imapPassword,
+        'secure':      true, // Defaulting to secure for simplicity
+        'displayName': data.displayName ?? data.email,
+        'smtpHost':    data.smtpHost,
+        'smtpPort':    data.smtpPort,
+      };
 
-      await Future.delayed(const Duration(milliseconds: 800));
-      _updateSyncProgress(tempId, 0.60);
-
-      await Future.delayed(const Duration(milliseconds: 700));
-      _updateSyncProgress(tempId, 0.90);
-
-      final realId = 'mailbox_${DateTime.now().millisecondsSinceEpoch}';
-      _finalizeMailbox(tempId, realId);
-      // ── End simulated ──
-
+      await ApiClient.post(ApiConstants.connectImap, data: payload);
+      await fetchMailboxes();
       return true;
-    } catch (e) {
-      _markMailboxError(tempId);
-      state = state.copyWith(error: 'Failed to connect mailbox: $e');
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Failed to connect mailbox.'),
+      );
+      return false;
+    } catch (_) {
+      state = state.copyWith(isLoading: false, error: 'An unexpected error occurred.');
       return false;
     }
   }
 
-  void _updateSyncProgress(String mailboxId, double progress) {
-    state = state.copyWith(
-      mailboxes: state.mailboxes.map((m) {
-        if (m.id == mailboxId) return m.copyWith(syncProgress: progress);
-        return m;
-      }).toList(),
-    );
+  // ── OAuth Connections ─────────────────────────────────────
+  
+  /// GET /mailboxes/[gmail|outlook]/auth-url
+  Future<String?> getOAuthUrl(MailboxProvider provider, String redirectUri) async {
+    try {
+      final endpoint = provider == MailboxProvider.gmail 
+          ? ApiConstants.gmailAuthUrl 
+          : ApiConstants.outlookAuthUrl;
+          
+      final response = await ApiClient.get(
+        endpoint, 
+        queryParameters: {'redirectUri': redirectUri},
+      );
+      return response.data['data']['url'] as String;
+    } catch (_) {
+      return null;
+    }
   }
 
-  void _finalizeMailbox(String tempId, String realId) {
-    state = state.copyWith(
-      mailboxes: state.mailboxes.map((m) {
-        if (m.id == tempId) {
-          return m.copyWith(
-            id: realId,
-            syncStatus: MailboxSyncStatus.synced,
-            syncProgress: 1.0,
-            lastSyncAt: DateTime.now(),
-          );
-        }
-        return m;
-      }).toList(),
-    );
+  /// POST /mailboxes/[gmail|outlook]
+  Future<bool> connectOAuth({
+    required MailboxProvider provider,
+    required String code,
+    required String redirectUri,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final endpoint = provider == MailboxProvider.gmail 
+          ? ApiConstants.connectGmail 
+          : ApiConstants.connectOutlook;
+          
+      await ApiClient.post(endpoint, data: {
+        'code': code,
+        'redirectUri': redirectUri,
+      });
+      
+      await fetchMailboxes();
+      return true;
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Failed to connect account.'),
+      );
+      return false;
+    } catch (_) {
+      state = state.copyWith(isLoading: false, error: 'An unexpected error occurred.');
+      return false;
+    }
   }
 
-  void _markMailboxError(String mailboxId) {
-    state = state.copyWith(
-      mailboxes: state.mailboxes.map((m) {
-        if (m.id == mailboxId) {
-          return m.copyWith(syncStatus: MailboxSyncStatus.error);
-        }
-        return m;
-      }).toList(),
-    );
+
+  // ── Remove Mailbox ────────────────────────────────────────
+  /// DELETE /mailboxes/:id
+  Future<bool> removeMailbox(int mailboxId) async {
+    try {
+      await ApiClient.delete(ApiConstants.mailboxById(mailboxId));
+      await fetchMailboxes();
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  Future<void> removeMailbox(String mailboxId) async {
-    // TODO: API call to remove mailbox from backend.
-    state = state.copyWith(
-      mailboxes: state.mailboxes.where((m) => m.id != mailboxId).toList(),
-    );
+  // ── Manual Sync ───────────────────────────────────────────
+  /// POST /mailboxes/:id/sync
+  Future<bool> retrySync(int mailboxId) async {
+    try {
+      await ApiClient.post(ApiConstants.syncMailbox(mailboxId));
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
-  Future<void> retrySync(String mailboxId) async {
-    _updateSyncProgress(mailboxId, 0.0);
-    state = state.copyWith(
-      mailboxes: state.mailboxes.map((m) {
-        if (m.id == mailboxId) {
-          return m.copyWith(
-              syncStatus: MailboxSyncStatus.syncing, syncProgress: 0.0);
-        }
-        return m;
-      }).toList(),
-    );
-
-    // TODO: Replace with real API sync call.
-    await Future.delayed(const Duration(seconds: 2));
-    _finalizeMailbox(mailboxId, mailboxId);
+  // ── Helper ───────────────────────────────────────────────
+  String _extractError(DioException e, String fallback) {
+    try {
+      final data = e.response?.data;
+      if (data is Map) return data['message'] as String? ?? fallback;
+    } catch (_) {}
+    return fallback;
   }
-
-  void clearError() => state = state.copyWith(clearError: true);
 }
 
-// ─── Add Mailbox Form Notifier ────────────────────────────
+// ── Form Data ──────────────────────────────────────────────
+
+
+class AddMailboxFormData {
+  String? displayName;
+  MailboxProvider? provider;
+  String? email;
+  String? imapHost;
+  int? imapPort;
+  String? imapPassword;
+  EncryptionMode? imapEncryption;
+  String? smtpHost;
+  int? smtpPort;
+  String? smtpPassword;
+  EncryptionMode? smtpEncryption;
+  String? syncFrequency;
+  int? fetchLimit;
+  bool securityScanEnabled;
+
+  AddMailboxFormData({
+    this.displayName,
+    this.provider,
+    this.email,
+    this.imapHost,
+    this.imapPort,
+    this.imapPassword,
+    this.imapEncryption,
+    this.smtpHost,
+    this.smtpPort,
+    this.smtpPassword,
+    this.smtpEncryption,
+    this.syncFrequency,
+    this.fetchLimit = 50,
+    this.securityScanEnabled = true,
+  });
+
+  AddMailboxFormData copyWith({
+    String? displayName,
+    MailboxProvider? provider,
+    String? email,
+    String? imapHost,
+    int? imapPort,
+    String? imapPassword,
+    EncryptionMode? imapEncryption,
+    String? smtpHost,
+    int? smtpPort,
+    String? smtpPassword,
+    EncryptionMode? smtpEncryption,
+    String? syncFrequency,
+    int? fetchLimit,
+    bool? securityScanEnabled,
+  }) {
+    return AddMailboxFormData(
+      displayName:         displayName         ?? this.displayName,
+      provider:            provider            ?? this.provider,
+      email:               email               ?? this.email,
+      imapHost:            imapHost            ?? this.imapHost,
+      imapPort:            imapPort            ?? this.imapPort,
+      imapPassword:        imapPassword        ?? this.imapPassword,
+      imapEncryption:      imapEncryption      ?? this.imapEncryption,
+      smtpHost:            smtpHost            ?? this.smtpHost,
+      smtpPort:            smtpPort            ?? this.smtpPort,
+      smtpPassword:        smtpPassword        ?? this.smtpPassword,
+      smtpEncryption:      smtpEncryption      ?? this.smtpEncryption,
+      syncFrequency:       syncFrequency       ?? this.syncFrequency,
+      fetchLimit:          fetchLimit          ?? this.fetchLimit,
+      securityScanEnabled: securityScanEnabled ?? this.securityScanEnabled,
+    );
+  }
+}
+
+// ── Providers ─────────────────────────────────────────────
+
+final mailboxesProvider = StateNotifierProvider<MailboxesNotifier, MailboxesState>(
+  (ref) => MailboxesNotifier(),
+);
+
+final addMailboxFormProvider = StateNotifierProvider<AddMailboxFormNotifier, AddMailboxFormData>(
+  (ref) => AddMailboxFormNotifier(),
+);
 
 class AddMailboxFormNotifier extends StateNotifier<AddMailboxFormData> {
   AddMailboxFormNotifier() : super(AddMailboxFormData());
 
-  void updateStep1({
-    required String displayName,
-    required MailboxProvider provider,
-  }) {
+  void updateStep1({required String displayName, required MailboxProvider provider}) {
     state = state.copyWith(displayName: displayName, provider: provider);
   }
 
   void updateStep2({
-    required String email,
-    required String imapHost,
-    required int imapPort,
-    required EncryptionMode imapEncryption,
+    required String email, 
+    required String imapHost, 
+    required int imapPort, 
     required String imapPassword,
+    required EncryptionMode imapEncryption,
   }) {
     state = state.copyWith(
-      email: email,
-      imapHost: imapHost,
-      imapPort: imapPort,
-      imapEncryption: imapEncryption,
+      email: email, 
+      imapHost: imapHost, 
+      imapPort: imapPort, 
       imapPassword: imapPassword,
+      imapEncryption: imapEncryption,
     );
   }
 
   void updateStep3({
-    required String smtpHost,
+    required String smtpHost, 
     required int smtpPort,
     required EncryptionMode smtpEncryption,
     String? smtpPassword,
   }) {
     state = state.copyWith(
-      smtpHost: smtpHost,
+      smtpHost: smtpHost, 
       smtpPort: smtpPort,
       smtpEncryption: smtpEncryption,
       smtpPassword: smtpPassword,
@@ -219,23 +311,5 @@ class AddMailboxFormNotifier extends StateNotifier<AddMailboxFormData> {
     );
   }
 
-  /// Clears all form data so the next "Add Mailbox" starts fresh.
   void reset() => state = AddMailboxFormData();
 }
-
-// ─── Providers ────────────────────────────────────────────
-
-/// Manages the list of mailboxes and their sync state.
-final mailboxesProvider =
-    StateNotifierProvider<MailboxesNotifier, MailboxesState>(
-  (ref) => MailboxesNotifier(),
-);
-
-/// Holds the multi-step form data across all 5 screens.
-///
-/// ⚠️  NOT autoDispose — the data must survive navigating between steps.
-/// Without listeners between steps, autoDispose would wipe the state.
-final addMailboxFormProvider =
-    StateNotifierProvider<AddMailboxFormNotifier, AddMailboxFormData>(
-  (ref) => AddMailboxFormNotifier(),
-);
