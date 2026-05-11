@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
@@ -27,8 +29,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
+  List<File> _attachments = [];
 
   bool _isSending = false;
+
+  Future<void> _pickFiles() async {
+    FilePickerResult? result = await FilePicker.pickFiles(allowMultiple: true);
+    if (result != null) {
+      setState(() {
+        _attachments.addAll(result.paths.where((path) => path != null).map((path) => File(path!)));
+      });
+    }
+  }
+
+  void _removeAttachment(int index) {
+    setState(() {
+      _attachments.removeAt(index);
+    });
+  }
 
   @override
   void initState() {
@@ -76,13 +94,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
             ? _subjectController.text.trim()
             : '(No Subject)',
         bodyText:  _messageController.text.trim(),
+        attachments: _attachments.isEmpty ? null : _attachments,
       );
 
       if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Message sent successfully')),
         );
-        context.go('/mailboxes/sent'); // العودة لصفحة المرسل كما في التصميم الأصلي
+        context.go('/mailboxes/$mbId/sent'); // العودة لصفحة المرسل للصندوق الحالي
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -113,6 +132,10 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
           style: AppTextStyles.headingL.copyWith(color: context.text1),
         ),
         actions: [
+          IconButton(
+            onPressed: _pickFiles,
+            icon: Icon(Icons.attach_file_rounded, color: context.text1),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: IconButton.filled(
@@ -170,6 +193,24 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
               ),
             ),
           ),
+          if (_attachments.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: List.generate(_attachments.length, (index) {
+                final file = _attachments[index];
+                final fileName = file.path.split(Platform.pathSeparator).last;
+                return Chip(
+                  label: Text(fileName, style: AppTextStyles.labelS.copyWith(color: context.text1)),
+                  backgroundColor: context.fieldBg,
+                  deleteIcon: Icon(Icons.close, size: 16, color: context.text1),
+                  onDeleted: () => _removeAttachment(index),
+                  side: BorderSide(color: context.button1.withValues(alpha: 0.35)),
+                );
+              }),
+            ),
+          ],
         ],
       ),
     );

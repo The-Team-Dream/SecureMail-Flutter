@@ -31,6 +31,7 @@ class _SpamScreenState extends ConsumerState<SpamScreen> {
       activeRoute: AppRoutes.spam(widget.mailboxId),
       messages: messages,
       mailboxId: widget.mailboxId,
+      onRefresh: () => ref.read(messagesProvider.notifier).fetchSpam(widget.mailboxId, refresh: true),
     );
   }
 }

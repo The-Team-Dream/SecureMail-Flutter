@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "978061625812",
+    "project_id": "mail-mobile",
+    "storage_bucket": "mail-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:978061625812:android:0fead5190c68d5b8a9ae41",
+        "android_client_info": {
+          "package_name": "com.securemail.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "932834989443-c3uit1livmk2o1pbbh41ei0p41c7gc3n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.securemail.app",
+            "certificate_hash": "cc871c24a881db04c6bcbfa09f0d482038e44b78"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDhRDHZKgL1ct3Uin8XVjVJQJBtQfcnyzM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

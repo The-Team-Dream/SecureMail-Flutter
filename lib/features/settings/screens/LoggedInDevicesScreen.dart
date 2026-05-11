@@ -1,56 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:securemail/core/mock/mock_data.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/shared/widgets/auth_gradient_background.dart';
+import 'package:securemail/features/settings/providers/sessions_provider.dart';
+import 'package:securemail/features/settings/models/session_model.dart';
 
-class LoggedInDevicesScreen extends StatefulWidget {
+class LoggedInDevicesScreen extends ConsumerStatefulWidget {
   const LoggedInDevicesScreen({super.key});
 
   @override
-  State<LoggedInDevicesScreen> createState() => _LoggedInDevicesScreenState();
+  ConsumerState<LoggedInDevicesScreen> createState() => _LoggedInDevicesScreenState();
 }
 
-class _LoggedInDevicesScreenState extends State<LoggedInDevicesScreen> {
-  // Load sessions from mock data — replace with API call later
-  late List<Map<String, dynamic>> _sessions;
+class _LoggedInDevicesScreenState extends ConsumerState<LoggedInDevicesScreen> {
   bool _isRevoking = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _sessions = List<Map<String, dynamic>>.from(
-      MockData.mockSessions.map((s) => Map<String, dynamic>.from(s)),
-    );
-  }
 
   Future<void> _revokeSession(int id) async {
     setState(() => _isRevoking = true);
-
-    // TODO: استبدل بـ API call حقيقي
-    // await ApiClient.instance.delete('/sessions/$id');
-    await Future.delayed(const Duration(milliseconds: 800));
-
+    
+    final success = await ref.read(sessionsProvider.notifier).revokeSession(id);
+    
     if (!mounted) return;
-    setState(() {
-      _sessions.removeWhere((s) => s['id'] == id);
-      _isRevoking = false;
-    });
+    setState(() => _isRevoking = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Session revoked successfully.',
-          style: AppTextStyles.bodyM.copyWith(color: Colors.white),
-        ),
-        backgroundColor: const Color(0xFF1F8A70),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-      ),
-    );
+    if (success) {
+      _showSnackBar('Session revoked successfully.', const Color(0xFF1F8A70));
+    } else {
+      _showSnackBar('Failed to revoke session.', Colors.redAccent);
+    }
   }
 
   Future<void> _revokeAll() async {
@@ -88,23 +67,26 @@ class _LoggedInDevicesScreenState extends State<LoggedInDevicesScreen> {
     if (confirm != true) return;
 
     setState(() => _isRevoking = true);
-    // TODO: استبدل بـ API call حقيقي
-    // await ApiClient.instance.delete('/sessions');
-    await Future.delayed(const Duration(milliseconds: 1000));
-
+    final success = await ref.read(sessionsProvider.notifier).revokeAllSessions();
+    
     if (!mounted) return;
-    setState(() {
-      _sessions = _sessions.where((s) => s['isCurrent'] == true).toList();
-      _isRevoking = false;
-    });
+    setState(() => _isRevoking = false);
 
+    if (success) {
+      _showSnackBar('All other sessions have been revoked.', const Color(0xFF1F8A70));
+    } else {
+      _showSnackBar('Failed to revoke sessions.', Colors.redAccent);
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'All other sessions have been revoked.',
+          message,
           style: AppTextStyles.bodyM.copyWith(color: Colors.white),
         ),
-        backgroundColor: const Color(0xFF1F8A70),
+        backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -115,116 +97,143 @@ class _LoggedInDevicesScreenState extends State<LoggedInDevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(sessionsProvider);
+    final sessions = state.sessions;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Logged In Devices'),
       ),
       body: AuthGradientBackground(
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.screenHorizontal,
-              vertical: AppSpacing.screenVertical,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: AppSpacing.x4),
-
-                // ── Header ──────────────────────────────────
-                Text(
-                  'Active Sessions',
-                  style: AppTextStyles.displayS.copyWith(color: context.text1),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.x2),
-                Text(
-                  'Review the devices currently signed into your SecureMail account. If you don\'t recognize a device, revoke its access immediately.',
-                  style: AppTextStyles.bodyM.copyWith(color: context.text3),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.x6),
-
-                // ── Sessions List ────────────────────────────
-                ..._sessions.map((session) => _buildSessionCard(session)),
-
-                const SizedBox(height: AppSpacing.x6),
-
-                // ── Revoke All Button ────────────────────────
-                SizedBox(
-                  width: double.infinity,
-                  height: AppSize.buttonHeightL,
-                  child: ElevatedButton.icon(
-                    onPressed: _isRevoking ? null : _revokeAll,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE24B4A),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor:
-                          const Color(0xFFE24B4A).withOpacity(0.4),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32),
-                      ),
-                      elevation: 0,
+          child: state.isLoading && sessions.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                  onRefresh: () => ref.read(sessionsProvider.notifier).fetchSessions(),
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.screenHorizontal,
+                      vertical: AppSpacing.screenVertical,
                     ),
-                    icon: _isRevoking
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: AppSpacing.x4),
+
+                        // ── Header ──────────────────────────────────
+                        Text(
+                          'Active Sessions',
+                          style: AppTextStyles.displayS.copyWith(color: context.text1),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.x2),
+                        Text(
+                          'Review the devices currently signed into your SecureMail account. If you don\'t recognize a device, revoke its access immediately.',
+                          style: AppTextStyles.bodyM.copyWith(color: context.text3),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.x6),
+
+                        // ── Error Message ────────────────────────────
+                        if (state.error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.x4),
+                            child: Text(
+                              state.error!,
+                              style: AppTextStyles.bodyS.copyWith(color: Colors.redAccent),
                             ),
-                          )
-                        : const Icon(
-                            Icons.logout,
-                            size: 18,
-                            color: Colors.white,
                           ),
-                    label: Text(
-                      'Log out of all other sessions',
-                      style: AppTextStyles.labelL.copyWith(color: Colors.white),
+
+                        // ── Sessions List ────────────────────────────
+                        if (sessions.isEmpty)
+                           Padding(
+                            padding: const EdgeInsets.symmetric(vertical: AppSpacing.x10),
+                            child: Text('No active sessions found.', style: AppTextStyles.bodyM.copyWith(color: context.text3)),
+                          )
+                        else
+                          ...sessions.map((session) => _buildSessionCard(session)),
+
+                        const SizedBox(height: AppSpacing.x6),
+
+                        // ── Revoke All Button ────────────────────────
+                        if (sessions.where((s) => !s.isCurrent).isNotEmpty)
+                          SizedBox(
+                            width: double.infinity,
+                            height: AppSize.buttonHeightL,
+                            child: ElevatedButton.icon(
+                              onPressed: _isRevoking ? null : _revokeAll,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFE24B4A),
+                                foregroundColor: Colors.white,
+                                disabledBackgroundColor:
+                                    const Color(0xFFE24B4A).withOpacity(0.4),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(32),
+                                ),
+                                elevation: 0,
+                              ),
+                              icon: _isRevoking
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.logout,
+                                      size: 18,
+                                      color: Colors.white,
+                                    ),
+                              label: Text(
+                                'Log out of all other sessions',
+                                style: AppTextStyles.labelL.copyWith(color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: AppSpacing.x2),
+                        Text(
+                          'This will end all sessions except for the one you are currently using.',
+                          style: AppTextStyles.bodyS.copyWith(color: context.text3),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: AppSpacing.x8),
+
+                        // ── Footer ──────────────────────────────────
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shield_outlined, size: 14, color: context.text3),
+                            const SizedBox(width: AppSpacing.x1),
+                            Text(
+                              'SECUREMAIL',
+                              style: AppTextStyles.labelS.copyWith(
+                                color: context.text3,
+                                letterSpacing: 2,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.x4),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.x2),
-                Text(
-                  'This will end all sessions except for the one you are currently using.',
-                  style: AppTextStyles.bodyS.copyWith(color: context.text3),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.x8),
-
-                // ── Footer ──────────────────────────────────
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.shield_outlined, size: 14, color: context.text3),
-                    const SizedBox(width: AppSpacing.x1),
-                    Text(
-                      'SECUREMAIL',
-                      style: AppTextStyles.labelS.copyWith(
-                        color: context.text3,
-                        letterSpacing: 2,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.x4),
-              ],
-            ),
-          ),
         ),
       ),
     );
   }
 
-  Widget _buildSessionCard(Map<String, dynamic> session) {
-    final isCurrent = session['isCurrent'] == true;
-    final os = session['deviceOs'] as String;
-    final browser = session['deviceBrowser'] as String;
-    final ip = session['ipAddress'] as String;
-    final loginAt = session['loginAt'] as String;
+  Widget _buildSessionCard(SessionModel session) {
+    final isCurrent = session.isCurrent;
+    final os = session.deviceOs;
+    final browser = session.deviceBrowser;
+    // Clean up IPv6 mapped IPv4 address
+    final ip = session.ipAddress.replaceAll('::ffff:', '');
+    final loginAt = session.loginAt;
 
     final deviceName = '$browser on $os';
     final lastActive = _formatDate(loginAt);
@@ -312,7 +321,7 @@ class _LoggedInDevicesScreenState extends State<LoggedInDevicesScreen> {
             OutlinedButton(
               onPressed: _isRevoking
                   ? null
-                  : () => _revokeSession(session['id'] as int),
+                  : () => _revokeSession(session.id),
               style: OutlinedButton.styleFrom(
                 foregroundColor: const Color(0xFFE24B4A),
                 side: const BorderSide(color: Color(0xFFE24B4A)),

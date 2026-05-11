@@ -31,6 +31,7 @@ class _PhishingScreenState extends ConsumerState<PhishingScreen> {
       activeRoute: AppRoutes.phishing(widget.mailboxId),
       messages: messages,
       mailboxId: widget.mailboxId,
+      onRefresh: () => ref.read(messagesProvider.notifier).fetchPhishing(widget.mailboxId, refresh: true),
     );
   }
 }

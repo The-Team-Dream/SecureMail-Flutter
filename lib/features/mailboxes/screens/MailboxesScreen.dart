@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:securemail/core/network/socket_service.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
@@ -19,10 +21,43 @@ class MailboxesScreen extends ConsumerStatefulWidget {
 class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
   final _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  StreamSubscription<Map<String, dynamic>>? _syncStartSub;
+  StreamSubscription<Map<String, dynamic>>? _syncDoneSub;
+  Timer? _timeagoTimer;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Listen for sync start events
+    _syncStartSub = socketService.syncStartStream.listen((event) {
+      final id = event['mailBoxId'];
+      if (id is int && mounted) {
+        ref.read(mailboxesProvider.notifier).markSyncStarted(id);
+      }
+    });
+
+    // Listen for sync complete events
+    _syncDoneSub = socketService.syncEventsStream.listen((event) {
+      final id = event['mailBoxId'];
+      if (id is int && mounted) {
+        ref.read(mailboxesProvider.notifier).markSyncCompleted(id);
+        ref.read(mailboxesProvider.notifier).fetchMailboxes();
+      }
+    });
+
+    // Timer to update timeago relative dates periodically
+    _timeagoTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _syncStartSub?.cancel();
+    _syncDoneSub?.cancel();
+    _timeagoTimer?.cancel();
     super.dispose();
   }
 
@@ -191,20 +226,30 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
                         ),
                       ),
                       const SizedBox(height: AppSpacing.x3),
-                      ...mailboxes.map((m) => Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: AppSpacing.x2),
-                            child: _MailboxCard(
-                              mailbox: m,
-                              onTap: () => context.go(AppRoutes.inbox(m.id)),
-                              onRemove: () => ref
-                                  .read(mailboxesProvider.notifier)
-                                  .removeMailbox(m.id),
-                              onRetry: () => ref
-                                  .read(mailboxesProvider.notifier)
-                                  .retrySync(m.id),
-                            ),
-                          )),
+                      ...mailboxes.map((m) {
+                        final syncing = state.isSyncing(m.id);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.x2),
+                          child: _MailboxCard(
+                            mailbox: m,
+                            isSyncing: syncing,
+                            onTap: (syncing && m.lastSyncedAt == null)
+                                ? () => ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('First time sync, please wait...'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    )
+                                : () => context.go(AppRoutes.inbox(m.id)),
+                            onRemove: () => ref
+                                .read(mailboxesProvider.notifier)
+                                .removeMailbox(m.id),
+                            onRetry: () => ref
+                                .read(mailboxesProvider.notifier)
+                                .retrySync(m.id),
+                          ),
+                        );
+                      }),
                     ] else ...[
                       Center(
                         child: Padding(
@@ -244,26 +289,33 @@ class _MailboxCard extends StatelessWidget {
     required this.onTap,
     required this.onRemove,
     required this.onRetry,
+    this.isSyncing = false,
   });
 
   final MailboxModel mailbox;
   final VoidCallback onTap;
   final VoidCallback onRemove;
   final VoidCallback onRetry;
+  final bool isSyncing;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.x4,
           vertical: AppSpacing.x3,
         ),
         decoration: BoxDecoration(
-          color: context.card1,
+          color: isSyncing
+              ? context.button1.withOpacity(0.06)
+              : context.card1,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: context.fieldBorder),
+          border: Border.all(
+            color: isSyncing ? context.button1.withOpacity(0.4) : context.fieldBorder,
+          ),
         ),
         child: Row(
           children: [
@@ -307,6 +359,26 @@ class _MailboxCard extends StatelessWidget {
   }
 
   Widget _buildStatusWidget(BuildContext context) {
+    // Real-time sync indicator takes priority over the model's stored status
+    if (isSyncing) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+            child: LinearProgressIndicator(
+              backgroundColor: context.button1.withOpacity(0.2),
+              valueColor: AlwaysStoppedAnimation<Color>(context.button1),
+              minHeight: 3,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.x1),
+          Text('Syncing emails…',
+              style: AppTextStyles.caption.copyWith(color: context.button1)),
+        ],
+      );
+    }
+
     switch (mailbox.syncStatus) {
       case MailboxSyncStatus.synced:
         return Row(children: [

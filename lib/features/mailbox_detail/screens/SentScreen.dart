@@ -31,6 +31,7 @@ class _SentScreenState extends ConsumerState<SentScreen> {
       activeRoute: AppRoutes.sent(widget.mailboxId),
       messages: messages,
       mailboxId: widget.mailboxId,
+      onRefresh: () => ref.read(messagesProvider.notifier).fetchSent(widget.mailboxId, refresh: true),
     );
   }
 }

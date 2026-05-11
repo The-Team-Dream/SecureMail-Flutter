@@ -9,6 +9,7 @@ import 'package:securemail/core/utils/validators.dart';
 import 'package:securemail/shared/widgets/app_border_outline.dart';
 import 'package:securemail/shared/widgets/app_primary_button.dart';
 import 'package:securemail/shared/widgets/auth_gradient_background.dart';
+import 'package:securemail/features/settings/providers/settings_provider.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -27,7 +28,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
-  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -40,37 +40,44 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
-
-    // TODO: استبدل بـ API call حقيقي
-    // await ApiClient.instance.patch(
-    //   ApiConstants.changePassword,
-    //   data: {
-    //     'currentPassword': _currentPassCtrl.text,
-    //     'newPassword':     _newPassCtrl.text,
-    //   },
-    // );
-
-    await Future.delayed(const Duration(milliseconds: 1200)); // mock delay
+    final success = await ref.read(settingsProvider.notifier).changePassword(
+          _currentPassCtrl.text,
+          _newPassCtrl.text,
+        );
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Password changed successfully.',
-          style: AppTextStyles.bodyM.copyWith(color: Colors.white),
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Password changed successfully.',
+            style: AppTextStyles.bodyM.copyWith(color: Colors.white),
+          ),
+          backgroundColor: const Color(0xFF1F8A70),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
         ),
-        backgroundColor: const Color(0xFF1F8A70),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+      );
+      Navigator.of(context).pop();
+    } else {
+      final error = ref.read(settingsProvider).error;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error ?? 'Failed to change password.',
+            style: AppTextStyles.bodyM.copyWith(color: Colors.white),
+          ),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
         ),
-      ),
-    );
-
-    Navigator.of(context).pop();
+      );
+    }
   }
 
   @override
@@ -110,7 +117,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                           AppPrimaryButton(
                             label: 'Update Password',
                             onPressed: _submit,
-                            isLoading: _isLoading,
+                            isLoading: ref.watch(settingsProvider).isUpdating,
                           ),
                           const SizedBox(height: AppSpacing.x12),
                         ],

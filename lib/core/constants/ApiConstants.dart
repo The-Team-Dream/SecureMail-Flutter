@@ -9,7 +9,7 @@ class ApiConstants {
 
   // يتم استخدام localhost للويب والـ IP الفعلي للهاتف
   static const String baseUrlDev =
-      kIsWeb ? 'http://localhost:3000' : 'http://10.0.0.124:3000';
+      kIsWeb ? 'http://localhost:3000' : 'http://10.0.0.106:3000';
 
   // ── Auth ──────────────────────────────────────────────────
   static const String login = '/auth/login';
@@ -22,6 +22,7 @@ class ApiConstants {
   static const String resendOtp = '/auth/resend-otp';
   static const String verify2Fa = '/auth/verify-2fa';
   static const String googleAuth = '/auth/google/login';
+  static const String googleAuthMobile = '/auth/google/mobile';
   static const String outlookAuth = '/auth/outlook';
 
   // ── User ──────────────────────────────────────────────────
@@ -65,6 +66,8 @@ class ApiConstants {
       '/mailboxes/$mailboxId/emails/$emailId';
   static String markEmailRead(int mailboxId, int emailId) =>
       '/mailboxes/$mailboxId/emails/$emailId/read';
+  static String markEmailStarred(int mailboxId, int emailId) =>
+      '/mailboxes/$mailboxId/emails/$emailId/star';
   static String deleteEmail(int mailboxId, int emailId) =>
       '/mailboxes/$mailboxId/emails/$emailId';
   static String reportEmail(int mailboxId, int emailId) =>

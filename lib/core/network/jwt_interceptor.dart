@@ -24,8 +24,11 @@ class JwtInterceptor extends Interceptor {
     final token = await _storage.read(key: AppConstants.secureAccessToken);
 
     if (token != null) {
+      debugPrint('[JwtInterceptor] Token found, adding to headers');
       options.headers[ApiConstants.headerAuthorization] =
           '${ApiConstants.bearerPrefix}$token';
+    } else {
+      debugPrint('[JwtInterceptor] No token found in storage for ${options.path}');
     }
 
     handler.next(options);

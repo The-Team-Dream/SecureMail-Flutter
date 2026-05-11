@@ -42,8 +42,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           password: _passwordCtrl.text,
         );
 
-    if (success && mounted) {
-      context.go(AppRoutes.dashboard);
+    if (!mounted) return;
+
+    if (success) {
+      final authState = ref.read(authProvider);
+
+      // ── الإيميل غير مفعّل → حوّله لصفحة OTP ──────────────
+      if (authState.requiresVerification) {
+        final email = authState.pendingEmail ?? _emailCtrl.text.trim();
+        // إعادة تعيين الـ flag قبل التنقل
+        ref.read(authProvider.notifier).clearVerificationFlag();
+        context.push(AppRoutes.otp, extra: email);
+        return;
+      }
+
+      // ── 2FA أو لوجين عادي → الداشبورد ────────────────────
+      if (!authState.requiresVerification && authState.isAuthenticated) {
+        context.go(AppRoutes.dashboard);
+      }
     }
   }
 
@@ -144,14 +160,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           label: 'Google',
           icon: const Icon(Icons.g_mobiledata,
               size: 20, color: Color(0xFF4285F4)),
-          onTap: () {/* TODO: Google OAuth */},
+          onTap: () async {
+            final success = await ref.read(authProvider.notifier).loginWithGoogle();
+            if (success && mounted) {
+              context.go(AppRoutes.dashboard);
+            }
+          },
         )),
         const SizedBox(width: AppSpacing.x3),
         Expanded(
             child: _socialButton(
           label: 'Outlook',
           icon: Icon(Icons.email, size: 20, color: context.text1),
-          onTap: () {/* TODO: Outlook OAuth */},
+          onTap: () async {
+            await ref.read(authProvider.notifier).loginWithOutlook();
+            // الـ Outlook بيستخدم Browser flow، التحويل هيحصل تلقائياً من الـ Router لما يرجع الـ Deep Link
+          },
         )),
       ],
     );

@@ -59,17 +59,23 @@ class _OAuthCallbackScreenState extends ConsumerState<OAuthCallbackScreen> {
     print('Code: ${widget.code}');
     print('Redirect URI: $redirectUri');
 
+    // Get the display name from the form provider
+    final formData = ref.read(addMailboxFormProvider);
+    final displayName = formData.displayName;
+
     try {
       final success = await ref.read(mailboxesProvider.notifier).connectOAuth(
         provider: provider,
         code: widget.code!,
         redirectUri: redirectUri,
+        displayName: displayName,
       );
       print('DEBUG: connectOAuth finished with success=$success');
 
       if (mounted) {
         if (success) {
           print('DEBUG: Navigating to mailboxes');
+          ref.read(addMailboxFormProvider.notifier).reset();
           context.go(AppRoutes.mailboxes);
         } else {
           final state = ref.read(mailboxesProvider);

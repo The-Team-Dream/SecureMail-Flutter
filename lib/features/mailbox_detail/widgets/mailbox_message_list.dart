@@ -6,7 +6,7 @@ import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/widgets/reclassify_sheet.dart';
 
-class MailboxMessageList extends StatelessWidget {
+class MailboxMessageList extends StatefulWidget {
   const MailboxMessageList({
     super.key,
     required this.messages,
@@ -14,6 +14,8 @@ class MailboxMessageList extends StatelessWidget {
     required this.mailboxId,
     this.emptyTitle = 'No messages',
     this.showRiskBadge = true,
+    this.onLoadMore,
+    this.isLoadingMore = false,
   });
 
   final List<MailboxMessage> messages;
@@ -21,15 +23,46 @@ class MailboxMessageList extends StatelessWidget {
   final int mailboxId;
   final String emptyTitle;
   final bool showRiskBadge;
+  final VoidCallback? onLoadMore;
+  final bool isLoadingMore;
+
+  @override
+  State<MailboxMessageList> createState() => _MailboxMessageListState();
+}
+
+class _MailboxMessageListState extends State<MailboxMessageList> {
+  late ScrollController _scrollController;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController = ScrollController();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      if (widget.onLoadMore != null && !widget.isLoadingMore) {
+        widget.onLoadMore!();
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (messages.isEmpty) {
+    if (widget.messages.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(28),
           child: Text(
-            emptyTitle,
+            widget.emptyTitle,
             style: AppTextStyles.bodyM.copyWith(color: context.text3),
           ),
         ),
@@ -37,22 +70,33 @@ class MailboxMessageList extends StatelessWidget {
     }
 
     return ListView.separated(
+      controller: _scrollController,
       padding: EdgeInsets.zero,
-      itemCount: messages.length,
+      itemCount: widget.messages.length + (widget.isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        return _MessageTile(
-          message: messages[index],
-          folderName: folderName,
-          mailboxId: mailboxId,
-          showRiskBadge: showRiskBadge,
-        );
+        if (index < widget.messages.length) {
+          return _MessageTile(
+            message: widget.messages[index],
+            folderName: widget.folderName,
+            mailboxId: widget.mailboxId,
+            showRiskBadge: widget.showRiskBadge,
+          );
+        } else {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 20),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
       },
       separatorBuilder: (context, index) {
-        return Divider(
-          height: 1,
-          thickness: 1,
-          color: context.text3.withValues(alpha: 0.15),
-        );
+        if (index < widget.messages.length - 1 || widget.isLoadingMore) {
+           return Divider(
+            height: 1,
+            thickness: 1,
+            color: context.text3.withValues(alpha: 0.15),
+          );
+        }
+        return const SizedBox.shrink();
       },
     );
   }

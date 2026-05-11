@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:securemail/features/auth/providers/auth_provider.dart';
+import 'package:securemail/features/auth/screens/ResetPasswordScreen.dart';
 import 'package:securemail/features/auth/screens/SplashScreen.dart';
 import 'package:securemail/features/auth/screens/LoginScreen.dart';
 import 'package:securemail/features/auth/screens/RegisterScreen.dart';
@@ -29,7 +32,6 @@ import 'package:securemail/features/settings/screens/PrivacySecurityScreen.dart'
 import 'package:securemail/features/settings/screens/SettingsScreen.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox/OAuthCallbackScreen.dart';
 
-
 class AppRoutes {
   AppRoutes._();
 
@@ -39,6 +41,8 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const otp = '/otp';
+  static const oauthSuccess = '/oauth-success';
+  static const resetPassword = '/reset-password';
 
   // Dashboard Tabs
   static const profile = '/profile';
@@ -72,11 +76,9 @@ class AppRoutes {
 
   // Keep dashboard as an alias or just use mailboxes
   static const dashboard = mailboxes;
-  
+
   static const oauthCallback = '/mailboxes/:provider/callback';
 }
-
-
 
 final appRouter = GoRouter(
   initialLocation: AppRoutes.splash,
@@ -266,7 +268,7 @@ final appRouter = GoRouter(
           final folder = extra['folder'] as String?;
           return MessageDetailScreen(
             mailboxId: mailboxId,
-            message: message, 
+            message: message,
             currentFolder: folder,
           );
         }
@@ -278,24 +280,39 @@ final appRouter = GoRouter(
       },
     ),
 
-    
     // ── OAuth Callback ────────────────────────────────────────
     GoRoute(
       path: AppRoutes.oauthCallback,
       builder: (context, state) {
         final providerStr = state.pathParameters['provider'];
         final code = state.uri.queryParameters['code'];
-        
-        final provider = providerStr == 'gmail' 
-            ? MailboxProvider.gmail 
+
+        final provider = providerStr == 'gmail'
+            ? MailboxProvider.gmail
             : MailboxProvider.outlook;
-            
+
         return OAuthCallbackScreen(code: code, provider: provider);
       },
     ),
 
-  ],
+    // ── Deep Link Success (Google Login) ──────────────────────
+    GoRoute(
+      path: AppRoutes.oauthSuccess,
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'];
+        return AuthSuccessScreen(token: token);
+      },
+    ),
 
+    // ── Deep Link Reset Password ──────────────────────────────
+    GoRoute(
+      path: AppRoutes.resetPassword,
+      builder: (context, state) {
+        final token = state.uri.queryParameters['token'] ?? '';
+        return ResetPasswordScreen(token: token);
+      },
+    ),
+  ],
 
   // ── Error Page ────────────────────────────────────────────
   errorBuilder: (context, state) => Scaffold(
@@ -304,3 +321,38 @@ final appRouter = GoRouter(
     ),
   ),
 );
+
+// ── Auth Success Screen (Internal for Deep Links) ───────────
+class AuthSuccessScreen extends ConsumerStatefulWidget {
+  final String? token;
+  const AuthSuccessScreen({super.key, this.token});
+
+  @override
+  ConsumerState<AuthSuccessScreen> createState() => _AuthSuccessScreenState();
+}
+
+class _AuthSuccessScreenState extends ConsumerState<AuthSuccessScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (widget.token != null) {
+        await ref.read(authProvider.notifier).setExternalToken(widget.token!);
+        if (mounted) {
+          context.go(AppRoutes.dashboard);
+        }
+      } else {
+        if (mounted) {
+          context.go(AppRoutes.login);
+        }
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
+  }
+}
