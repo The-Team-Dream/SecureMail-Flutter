@@ -9,7 +9,7 @@ class ApiConstants {
 
   // يتم استخدام localhost للويب والـ IP الفعلي للهاتف
   static const String baseUrlDev =
-      kIsWeb ? 'http://localhost:3000' : 'http://10.0.0.124:3000';
+      kIsWeb ? 'http://localhost:3000' : 'http://10.0.0.95:3000';
 
   // ── Auth ──────────────────────────────────────────────────
   static const String login = '/auth/login';
