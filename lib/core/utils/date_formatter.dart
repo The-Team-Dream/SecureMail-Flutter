@@ -20,8 +20,7 @@ class DateFormatter {
     final isThisYear = local.year == now.year;
 
     if (isToday)    return DateFormat('h:mm a').format(local);
-    if (isThisYear) return DateFormat('MMM d').format(local);
-    return DateFormat('MM/dd/yy').format(local);
+    return DateFormat('d MMM').format(local);
   }
 
   /// وقت كامل للـ email detail screen

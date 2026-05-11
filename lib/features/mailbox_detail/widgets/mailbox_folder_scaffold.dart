@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
@@ -6,8 +7,9 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/features/mailbox_detail/widgets/mailbox_message_list.dart';
 import 'package:securemail/features/mailbox_detail/widgets/mailbox_side_drawer.dart';
+import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 
-class MailboxFolderScaffold extends StatefulWidget {
+class MailboxFolderScaffold extends ConsumerStatefulWidget {
   const MailboxFolderScaffold({
     super.key,
     required this.title,
@@ -19,6 +21,9 @@ class MailboxFolderScaffold extends StatefulWidget {
     this.mailboxEmail = '',
     this.unreadCount,
     this.showRiskBadge = true,
+    this.onLoadMore,
+    this.isLoadingMore = false,
+    this.onRefresh,
   });
 
   final String title;
@@ -30,12 +35,15 @@ class MailboxFolderScaffold extends StatefulWidget {
   final String mailboxEmail;
   final int? unreadCount;
   final bool showRiskBadge;
+  final VoidCallback? onLoadMore;
+  final bool isLoadingMore;
+  final Future<void> Function()? onRefresh;
 
   @override
-  State<MailboxFolderScaffold> createState() => _MailboxFolderScaffoldState();
+  ConsumerState<MailboxFolderScaffold> createState() => _MailboxFolderScaffoldState();
 }
 
-class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
+class _MailboxFolderScaffoldState extends ConsumerState<MailboxFolderScaffold> {
   final _searchController = TextEditingController();
   String _activeFilter = 'All';
   String _query = '';
@@ -156,12 +164,17 @@ class _MailboxFolderScaffoldState extends State<MailboxFolderScaffold> {
               ),
             ),
             Expanded(
-              child: MailboxMessageList(
-                messages: messages,
-                folderName: widget.title,
-                mailboxId: widget.mailboxId,
-                emptyTitle: 'No ${widget.title.toLowerCase()} messages',
-                showRiskBadge: widget.showRiskBadge,
+              child: RefreshIndicator(
+                onRefresh: widget.onRefresh ?? () async {},
+                child: MailboxMessageList(
+                  messages: messages,
+                  folderName: widget.title,
+                  mailboxId: widget.mailboxId,
+                  emptyTitle: 'No ${widget.title.toLowerCase()} messages',
+                  showRiskBadge: widget.showRiskBadge,
+                  onLoadMore: widget.onLoadMore,
+                  isLoadingMore: widget.isLoadingMore,
+                ),
               ),
             ),
           ],

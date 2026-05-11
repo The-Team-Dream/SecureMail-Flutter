@@ -310,12 +310,11 @@ class Profilescreen extends ConsumerWidget {
                 final confirmed = await _showLogoutDialog(context);
                 if (confirmed != true) return;
 
-                final success =
-                    await ref.read(profileProvider.notifier).logout();
+                await ref.read(profileProvider.notifier).logout();
 
-                if (success && context.mounted) {
-                  context.go(AppRoutes.login);
-                }
+                // نؤجّل التنقل للـ microtask التالي حتى ينتهي الـ Dialog
+                // من إغلاق نفسه أولاً قبل إعادة تعيين الـ Stack
+                Future.microtask(() => appRouter.go(AppRoutes.login));
               },
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFFE24B4A),
@@ -493,6 +492,7 @@ class Profilescreen extends ConsumerWidget {
   Future<bool?> _showLogoutDialog(BuildContext context) {
     return showDialog<bool>(
       context: context,
+      useRootNavigator: true, // ← مهم: يستخدم Root Navigator مش GoRouter's navigator
       builder: (_) => AlertDialog(
         backgroundColor: context.card1,
         shape: RoundedRectangleBorder(
@@ -527,14 +527,16 @@ class Profilescreen extends ConsumerWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(false),
             child: Text(
               'Cancel',
               style: AppTextStyles.labelM.copyWith(color: context.text3),
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE24B4A),
               foregroundColor: Colors.white,

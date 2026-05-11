@@ -5,14 +5,15 @@ import 'package:securemail/features/mailbox_detail/models/email_model.dart';
 import 'package:securemail/features/mailbox_detail/models/paginated_emails_model.dart';
 import 'package:dio/dio.dart';
 import 'dart:io';
+import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
+import 'package:securemail/core/network/socket_service.dart';
 
 // ── State ──────────────────────────────────────────────────
-
-import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 
 class MessagesState {
   const MessagesState({
     this.isLoading = false,
+    this.isFetchingMore = false,
     this.error,
     this.inbox = const [],
     this.sent = const [],
@@ -22,9 +23,12 @@ class MessagesState {
     this.trash = const [],
     this.searchResult = const [],
     this.selectedEmail,
+    this.currentPage = 1,
+    this.hasMore = true,
   });
 
   final bool isLoading;
+  final bool isFetchingMore;
   final String? error;
   final List<EmailModel> inbox;
   final List<EmailModel> sent;
@@ -34,6 +38,8 @@ class MessagesState {
   final List<EmailModel> trash;
   final List<EmailModel> searchResult;
   final EmailModel? selectedEmail;
+  final int currentPage;
+  final bool hasMore;
 
   // ── UI Compatibility Getters ──────────────────────────────
 
@@ -46,6 +52,7 @@ class MessagesState {
 
   MessagesState copyWith({
     bool? isLoading,
+    bool? isFetchingMore,
     String? error,
     List<EmailModel>? inbox,
     List<EmailModel>? sent,
@@ -55,20 +62,25 @@ class MessagesState {
     List<EmailModel>? trash,
     List<EmailModel>? searchResult,
     EmailModel? selectedEmail,
+    int? currentPage,
+    bool? hasMore,
     bool clearError = false,
     bool clearSelected = false,
   }) {
     return MessagesState(
-      isLoading:    isLoading    ?? this.isLoading,
-      error:        clearError   ? null : error ?? this.error,
-      inbox:        inbox        ?? this.inbox,
-      sent:         sent         ?? this.sent,
-      spam:         spam         ?? this.spam,
-      malware:      malware      ?? this.malware,
-      phishing:     phishing     ?? this.phishing,
-      trash:        trash        ?? this.trash,
-      searchResult: searchResult ?? this.searchResult,
-      selectedEmail: clearSelected ? null : selectedEmail ?? this.selectedEmail,
+      isLoading:      isLoading      ?? this.isLoading,
+      isFetchingMore: isFetchingMore ?? this.isFetchingMore,
+      error:          clearError     ? null : error ?? this.error,
+      inbox:          inbox          ?? this.inbox,
+      sent:           sent           ?? this.sent,
+      spam:           spam           ?? this.spam,
+      malware:        malware        ?? this.malware,
+      phishing:       phishing       ?? this.phishing,
+      trash:          trash          ?? this.trash,
+      searchResult:   searchResult   ?? this.searchResult,
+      selectedEmail:  clearSelected  ? null : selectedEmail ?? this.selectedEmail,
+      currentPage:    currentPage    ?? this.currentPage,
+      hasMore:        hasMore        ?? this.hasMore,
     );
   }
 }
@@ -76,22 +88,71 @@ class MessagesState {
 // ── Notifier ───────────────────────────────────────────────
 
 class MessagesNotifier extends StateNotifier<MessagesState> {
-  MessagesNotifier() : super(const MessagesState());
+  MessagesNotifier() : super(const MessagesState()) {
+    _listenToSocket();
+  }
 
-  // ── Fetch Folders ─────────────────────────────────────────
+  void _listenToSocket() {
+    // We removed the aggressive refresh on NEW_EMAIL_RECEIVED to prevent flickering.
+    // Sync completion is now handled in the Screen UI layer.
+  }
 
-  Future<void> fetchInbox(int mailboxId, {int page = 1}) async {
-    state = state.copyWith(isLoading: true, clearError: true);
+  // ── Fetch Inbox (Supports Pagination) ─────────────────────
+
+  Future<void> fetchInbox(int mailboxId, {bool refresh = false, bool silent = false}) async {
+    if (refresh) {
+      if (!silent) {
+        state = state.copyWith(isLoading: true, clearError: true);
+      }
+      state = state.copyWith(currentPage: 1, hasMore: true, clearError: true);
+      
+      // Trigger background sync when manually refreshing (not silent)
+      if (!silent) {
+        try {
+          ApiClient.post(ApiConstants.syncMailbox(mailboxId));
+        } catch (_) {}
+      }
+    } else if (state.isLoading || !state.hasMore || state.isFetchingMore) {
+      return;
+    }
+
+    if (!refresh && state.inbox.isNotEmpty) {
+      state = state.copyWith(isFetchingMore: true);
+    }
+
     try {
-      final response = await ApiClient.get(ApiConstants.inbox(mailboxId), queryParameters: {'page': page});
+      final response = await ApiClient.get(
+        ApiConstants.inbox(mailboxId), 
+        queryParameters: {
+          'page': state.currentPage,
+          'limit': 20,
+        },
+      );
+      
       final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
-      state = state.copyWith(isLoading: false, inbox: paginated.data);
+      
+      final List<EmailModel> updatedList = refresh 
+          ? paginated.data 
+          : [...state.inbox, ...paginated.data];
+
+      state = state.copyWith(
+        isLoading:      false,
+        isFetchingMore: false,
+        inbox:          updatedList,
+        currentPage:    state.currentPage + 1,
+        hasMore:        paginated.data.length == 20, // يفترض أن 20 هي الـ limit
+      );
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      state = state.copyWith(isLoading: false, isFetchingMore: false, error: e.toString());
     }
   }
 
-  Future<void> fetchSent(int mailboxId) async {
+  // ── Fetch Other Folders (Simple version for now) ──────────
+
+  Future<void> fetchSent(int mailboxId, {bool refresh = false}) async {
+    if (refresh) {
+      try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
+    }
     try {
       final response = await ApiClient.get(ApiConstants.sent(mailboxId));
       final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
@@ -99,7 +160,10 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     } catch (_) {}
   }
 
-  Future<void> fetchSpam(int mailboxId) async {
+  Future<void> fetchSpam(int mailboxId, {bool refresh = false}) async {
+    if (refresh) {
+      try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
+    }
     try {
       final response = await ApiClient.get(ApiConstants.spam(mailboxId));
       final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
@@ -107,7 +171,10 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     } catch (_) {}
   }
 
-  Future<void> fetchPhishing(int mailboxId) async {
+  Future<void> fetchPhishing(int mailboxId, {bool refresh = false}) async {
+    if (refresh) {
+      try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
+    }
     try {
       final response = await ApiClient.get(ApiConstants.phishing(mailboxId));
       final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
@@ -115,11 +182,25 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     } catch (_) {}
   }
 
-  Future<void> fetchMalware(int mailboxId) async {
+  Future<void> fetchMalware(int mailboxId, {bool refresh = false}) async {
+    if (refresh) {
+      try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
+    }
     try {
       final response = await ApiClient.get(ApiConstants.malware(mailboxId));
       final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
       state = state.copyWith(malware: paginated.data);
+    } catch (_) {}
+  }
+
+  Future<void> fetchTrash(int mailboxId, {bool refresh = false}) async {
+    if (refresh) {
+      try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
+    }
+    try {
+      final response = await ApiClient.get(ApiConstants.trash(mailboxId));
+      final paginated = PaginatedEmailsModel.fromJson(response.data['data']);
+      state = state.copyWith(trash: paginated.data);
     } catch (_) {}
   }
 
@@ -142,7 +223,26 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     try {
       final response = await ApiClient.get(ApiConstants.emailById(mailboxId, emailId));
       final email = EmailModel.fromJson(response.data['data']);
+      
       state = state.copyWith(isLoading: false, selectedEmail: email);
+
+      // Automatically mark as read if it's not already
+      if (!email.isRead) {
+        markRead(mailboxId, emailId, true);
+        
+        // Update local state lists so UI updates immediately
+        final updatedInbox = state.inbox.map((e) => e.id == emailId ? e.copyWith(isRead: true) : e).toList();
+        final updatedSpam = state.spam.map((e) => e.id == emailId ? e.copyWith(isRead: true) : e).toList();
+        final updatedPhishing = state.phishing.map((e) => e.id == emailId ? e.copyWith(isRead: true) : e).toList();
+        final updatedTrash = state.trash.map((e) => e.id == emailId ? e.copyWith(isRead: true) : e).toList();
+
+        state = state.copyWith(
+          inbox: updatedInbox,
+          spam: updatedSpam,
+          phishing: updatedPhishing,
+          trash: updatedTrash,
+        );
+      }
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
@@ -166,6 +266,17 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
   Future<bool> deleteMessage(int mailboxId, int emailId) async {
     try {
       await ApiClient.delete(ApiConstants.deleteEmail(mailboxId, emailId));
+      
+      // Remove from all local lists so UI updates immediately
+      state = state.copyWith(
+        inbox:    state.inbox.where((e) => e.id != emailId).toList(),
+        spam:     state.spam.where((e) => e.id != emailId).toList(),
+        phishing: state.phishing.where((e) => e.id != emailId).toList(),
+        trash:    state.trash.where((e) => e.id != emailId).toList(),
+        malware:  state.malware.where((e) => e.id != emailId).toList(),
+        sent:     state.sent.where((e) => e.id != emailId).toList(),
+      );
+      
       return true;
     } catch (_) {
       return false;
@@ -178,6 +289,31 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
         ApiConstants.reclassifyEmail(mailboxId, emailId),
         data: {'folder': targetFolder.toLowerCase()},
       );
+      
+      // Remove from all local lists
+      final updatedInbox = state.inbox.where((e) => e.id != emailId).toList();
+      final updatedSpam = state.spam.where((e) => e.id != emailId).toList();
+      final updatedPhishing = state.phishing.where((e) => e.id != emailId).toList();
+      final updatedTrash = state.trash.where((e) => e.id != emailId).toList();
+      final updatedMalware = state.malware.where((e) => e.id != emailId).toList();
+
+      state = state.copyWith(
+        inbox: updatedInbox,
+        spam: updatedSpam,
+        phishing: updatedPhishing,
+        trash: updatedTrash,
+        malware: updatedMalware,
+      );
+
+      // Refresh target folder to show the moved email
+      switch (targetFolder.toLowerCase()) {
+        case 'inbox': fetchInbox(mailboxId, refresh: true); break;
+        case 'spam': fetchSpam(mailboxId); break;
+        case 'phishing': fetchPhishing(mailboxId); break;
+        case 'trash': fetchTrash(mailboxId); break;
+        case 'malware': fetchMalware(mailboxId); break;
+      }
+
       return true;
     } catch (_) {
       return false;

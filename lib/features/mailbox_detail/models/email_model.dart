@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:securemail/core/utils/date_formatter.dart';
 import 'attachment_model.dart';
 import 'mailbox_message.dart';
 
@@ -42,6 +43,48 @@ class EmailModel {
     required this.receivedAt,
     required this.attachments,
   });
+
+  EmailModel copyWith({
+    int? id,
+    int? mailBoxId,
+    String? subject,
+    String? fromAddr,
+    String? fromName,
+    List<String>? toAddr,
+    String? bodyText,
+    String? bodyHtml,
+    bool? isRead,
+    bool? isFlagged,
+    bool? isSpam,
+    bool? isPhishing,
+    double? spamScore,
+    double? phishingScore,
+    String? malwareVerdict,
+    Map<String, dynamic>? aiReport,
+    String? receivedAt,
+    List<AttachmentModel>? attachments,
+  }) {
+    return EmailModel(
+      id:              id ?? this.id,
+      mailBoxId:       mailBoxId ?? this.mailBoxId,
+      subject:         subject ?? this.subject,
+      fromAddr:        fromAddr ?? this.fromAddr,
+      fromName:        fromName ?? this.fromName,
+      toAddr:          toAddr ?? this.toAddr,
+      bodyText:        bodyText ?? this.bodyText,
+      bodyHtml:        bodyHtml ?? this.bodyHtml,
+      isRead:          isRead ?? this.isRead,
+      isFlagged:       isFlagged ?? this.isFlagged,
+      isSpam:          isSpam ?? this.isSpam,
+      isPhishing:      isPhishing ?? this.isPhishing,
+      spamScore:       spamScore ?? this.spamScore,
+      phishingScore:   phishingScore ?? this.phishingScore,
+      malwareVerdict:  malwareVerdict ?? this.malwareVerdict,
+      aiReport:        aiReport ?? this.aiReport,
+      receivedAt:      receivedAt ?? this.receivedAt,
+      attachments:     attachments ?? this.attachments,
+    );
+  }
 
   factory EmailModel.fromJson(Map<String, dynamic> json) {
     return EmailModel(
@@ -106,10 +149,6 @@ class EmailModel {
   String _formatTime(String dateStr) {
     final date = DateTime.tryParse(dateStr);
     if (date == null) return '';
-    final now = DateTime.now();
-    if (date.year == now.year && date.month == now.month && date.day == now.day) {
-      return '${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-    }
-    return '${date.day}/${date.month}';
+    return DateFormatter.emailTime(date);
   }
 }

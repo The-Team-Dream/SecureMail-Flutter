@@ -51,7 +51,7 @@ class ReclassifySheet extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
-              'Reclassify Message',
+              'Move to',
               style: AppTextStyles.headingS.copyWith(color: context.text1),
             ),
           ),
@@ -66,11 +66,15 @@ class ReclassifySheet extends ConsumerWidget {
                 final mbId = message.mailboxId;
                 if (mbId == null) return;
                 
+                // Map 'Clean / Safe' to 'inbox' for the backend
+                String target = opt.$2.toLowerCase();
+                if (target == 'clean / safe') target = 'inbox';
+                
                 // Perform actual move
                 await ref.read(messagesProvider.notifier).reclassifyMessage(
                   mbId, 
                   int.parse(message.id), 
-                  opt.$2,
+                  target,
                 );
                 
                 if (context.mounted) {
@@ -92,7 +96,7 @@ class ReclassifySheet extends ConsumerWidget {
           ListTile(
             leading: const Icon(Icons.delete_outline_rounded, color: Color(0xFFFF5252)),
             title: Text(
-              'Delete Message',
+              'Trash',
               style: AppTextStyles.bodyL.copyWith(color: const Color(0xFFFF5252)),
             ),
             onTap: () async {
@@ -108,7 +112,7 @@ class ReclassifySheet extends ConsumerWidget {
                 onMoved?.call();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Message deleted'),
+                    content: Text('Message moved to Trash'),
                     backgroundColor: Color(0xFFFF5252),
                     duration: Duration(seconds: 2),
                   ),

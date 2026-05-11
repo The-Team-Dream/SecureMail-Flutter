@@ -1,3 +1,5 @@
+import 'package:timeago/timeago.dart' as timeago;
+
 enum MailboxProvider { gmail, outlook, imap }
 
 enum MailboxSyncStatus { syncing, synced, reauth, error }
@@ -23,7 +25,9 @@ class MailboxModel {
 
   String get lastSyncLabel {
     if (lastSyncedAt == null) return 'Never';
-    return 'Just now';
+    final date = DateTime.tryParse(lastSyncedAt!);
+    if (date == null) return 'Unknown';
+    return timeago.format(date);
   }
 
   MailboxProvider get provider {

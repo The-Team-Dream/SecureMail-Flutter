@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:securemail/core/utils/date_formatter.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,10 +9,9 @@ import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/features/mailbox_detail/widgets/reclassify_sheet.dart';
-import 'package:flutter_widget_from_html/flutter_widget_from_html.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'package:securemail/features/mailbox_detail/models/email_model.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MessageDetailScreen extends ConsumerStatefulWidget {
   const MessageDetailScreen({
@@ -37,7 +37,7 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _starred = !widget.message.isActive; // simple mock for star state or use real flag if available
+    _starred = !widget.message.isActive; 
     
     Future.microtask(() {
       ref.read(messagesProvider.notifier).fetchEmailDetail(
@@ -49,7 +49,6 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
 
   @override
   void dispose() {
-    // Clear selection so next time we open another email we don't see old content briefly
     Future.microtask(() {
       ref.read(messagesProvider.notifier).clearSelected();
     });
@@ -80,6 +79,7 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
                       ),
                       _SenderCard(
                         message: widget.message,
+                        email: email,
                         expanded: _senderExpanded,
                         onExpandTap: () =>
                             setState(() => _senderExpanded = !_senderExpanded),
@@ -154,7 +154,7 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Message deleted'),
+                  content: Text('Message moved to Trash'),
                   backgroundColor: Color(0xFFFF5252),
                 ),
               );
@@ -241,11 +241,13 @@ class _SubjectRow extends StatelessWidget {
 class _SenderCard extends StatelessWidget {
   const _SenderCard({
     required this.message,
+    this.email,
     required this.expanded,
     required this.onExpandTap,
   });
 
   final MailboxMessage message;
+  final EmailModel? email;
   final bool expanded;
   final VoidCallback onExpandTap;
 
@@ -280,7 +282,9 @@ class _SenderCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      message.timeLabel,
+                      email != null 
+                        ? DateFormatter.emailTime(DateTime.parse(email!.receivedAt))
+                        : message.timeLabel,
                       style: AppTextStyles.caption.copyWith(
                         color: context.text3,
                         fontSize: 12,
@@ -314,9 +318,22 @@ class _SenderCard extends StatelessWidget {
                 ),
                 if (expanded) ...[
                   const SizedBox(height: 8),
-                  _DetailRow(label: 'from', value: message.sender),
-                  _DetailRow(label: 'to', value: 'me'),
-                  _DetailRow(label: 'date', value: message.timeLabel),
+                  _DetailRow(
+                    label: 'from', 
+                    value: email != null ? email!.fromAddr : message.sender,
+                  ),
+                  _DetailRow(
+                    label: 'to', 
+                    value: email != null && email!.toAddr.isNotEmpty
+                        ? email!.toAddr.join(', ')
+                        : 'me',
+                  ),
+                  _DetailRow(
+                    label: 'date', 
+                    value: email != null 
+                        ? DateFormatter.emailFull(DateTime.parse(email!.receivedAt))
+                        : message.timeLabel,
+                  ),
                 ],
                 const SizedBox(height: 8),
                 _SecurityBadge(message: message),
@@ -413,7 +430,7 @@ class _SecurityBadge extends StatelessWidget {
   }
 }
 
-// ── Message Body ───────────────────────────────────────────
+// ── Message Body (Improved for Full-Page Feel) ─────────────
 
 class _MessageBody extends StatefulWidget {
   const _MessageBody({required this.email});
@@ -427,6 +444,8 @@ class _MessageBody extends StatefulWidget {
 class _MessageBodyState extends State<_MessageBody> {
   late final WebViewController _controller;
   bool _isWebViewSupported = !kIsWeb;
+  double _webViewHeight = 50; // Initial placeholder height
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -435,42 +454,128 @@ class _MessageBodyState extends State<_MessageBody> {
       _controller = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
         ..setBackgroundColor(Colors.transparent)
-        ..loadHtmlString(_wrapHtml(widget.email.bodyHtml ?? widget.email.bodyText ?? ''));
+        ..addJavaScriptChannel(
+          'HeightChannel',
+          onMessageReceived: (JavaScriptMessage message) {
+            final double? height = double.tryParse(message.message);
+            if (height != null && height > 0 && mounted) {
+              setState(() {
+                _webViewHeight = height;
+                _isLoading = false;
+              });
+            }
+          },
+        )
+        ..setNavigationDelegate(
+          NavigationDelegate(
+            onNavigationRequest: (NavigationRequest request) {
+              if (request.url.startsWith('http')) {
+                _launchUrl(request.url);
+                return NavigationDecision.prevent;
+              }
+              return NavigationDecision.navigate;
+            },
+          ),
+        )
+        ..loadHtmlString(_wrapHtml(widget.email.bodyHtml ?? widget.email.bodyText ?? '(No content)'));
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
   String _wrapHtml(String content) {
-    if (content.toLowerCase().contains('<html')) {
-      return content;
-    }
+    // 1. Enforce native typography by removing hardcoded fonts
+    var cleaned = content.replaceAll(RegExp(r'font-family:\s*[^;"]+;?'), '');
 
     return """
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
   <style>
+    :root {
+      color-scheme: light dark;
+    }
     body {
       margin: 0;
-      padding: 16px;
+      padding: 16px 16px 32px 16px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 16px;
       line-height: 1.5;
+      color: #333;
+      background-color: transparent;
       -webkit-text-size-adjust: 100%;
+      word-wrap: break-word;
+    }
+    @media (prefers-color-scheme: dark) {
+      /* Smart Invert Algorithm */
+      html {
+        /* Invert 100% makes white -> black.
+           Contrast 0.85 lifts the pure black to a sleek dark gray (#262626) 
+           and softens the pure white text to off-white, saving the eyes. */
+        filter: invert(100%) hue-rotate(180deg) contrast(0.85);
+      }
+      /* Double invert to preserve images and videos */
+      img, video, iframe, [style*="background-image"] {
+        /* contrast(1.18) perfectly reverses the 0.85 contrast applied to the parent */
+        filter: contrast(1.18) invert(100%) hue-rotate(180deg);
+      }
+      body {
+        background-color: transparent !important;
+      }
     }
     img { 
       max-width: 100% !important; 
       height: auto !important; 
+      border-radius: 6px;
     }
     table {
       max-width: 100% !important;
       width: 100% !important;
     }
+    a { color: #1a73e8; text-decoration: none; }
+    blockquote {
+      margin: 0 0 0 8px;
+      padding-left: 12px;
+      border-left: 3px solid #e0e0e0;
+      color: #757575;
+    }
   </style>
 </head>
 <body>
-  $content
+  <div id="email-wrapper">
+    $cleaned
+  </div>
+  <script>
+    const target = document.getElementById('email-wrapper');
+    const sendHeight = () => {
+      // Send height back to Flutter via the JavaScript Channel
+      HeightChannel.postMessage(document.documentElement.scrollHeight.toString());
+    };
+    
+    // 1. Initial measurement
+    sendHeight();
+    
+    // 2. Observe DOM changes natively (for lazy loading, animations, etc.)
+    const observer = new ResizeObserver(entries => {
+      sendHeight();
+    });
+    observer.observe(target);
+    
+    // 3. Ensure we measure again if images load lazily
+    const images = document.querySelectorAll('img');
+    images.forEach(img => {
+      if (!img.complete) {
+        img.addEventListener('load', sendHeight);
+      }
+    });
+  </script>
 </body>
 </html>
 """;
@@ -478,26 +583,38 @@ class _MessageBodyState extends State<_MessageBody> {
 
   @override
   Widget build(BuildContext context) {
-    final content = widget.email.bodyHtml ?? widget.email.bodyText ?? '(No content)';
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: SizedBox(
-        height: 500, // Increased height for better initial view
-        child: _isWebViewSupported 
-          ? WebViewWidget(controller: _controller)
-          : Container(
-              padding: const EdgeInsets.all(18),
-              child: HtmlWidget(
-                content,
-                textStyle: AppTextStyles.bodyL.copyWith(
-                  color: context.text2,
-                  height: 1.6,
-                  fontSize: 15,
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_isLoading)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(context.button1),
               ),
             ),
-      ),
+          ),
+        AnimatedOpacity(
+          opacity: _isLoading ? 0.0 : 1.0,
+          duration: const Duration(milliseconds: 300),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            height: _webViewHeight,
+            constraints: const BoxConstraints(minHeight: 50),
+            child: _isWebViewSupported 
+              ? WebViewWidget(controller: _controller)
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    widget.email.bodyText ?? 'Content cannot be displayed natively.',
+                    style: AppTextStyles.bodyL.copyWith(color: context.text1),
+                  ),
+                ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -542,7 +659,7 @@ class _ActionButtons extends StatelessWidget {
           _GmailButton(
             onPressed: () => _showReclassifyMenu(context),
             icon: Icons.security_rounded,
-            label: 'Reclassified',
+            label: 'Move to',
           ),
         ],
       ),

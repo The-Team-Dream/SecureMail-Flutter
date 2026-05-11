@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:securemail/core/network/api_client.dart';
 import 'package:securemail/core/constants/ApiConstants.dart';
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
@@ -15,22 +16,28 @@ class MailboxesState {
     this.mailboxes = const [],
     this.isLoading = false,
     this.error,
+    this.syncingMailboxIds = const {},
   });
 
   final List<MailboxModel> mailboxes;
   final bool isLoading;
   final String? error;
+  final Set<int> syncingMailboxIds;
+
+  bool isSyncing(int mailboxId) => syncingMailboxIds.contains(mailboxId);
 
   MailboxesState copyWith({
     List<MailboxModel>? mailboxes,
     bool? isLoading,
     String? error,
     bool clearError = false,
+    Set<int>? syncingMailboxIds,
   }) {
     return MailboxesState(
       mailboxes: mailboxes ?? this.mailboxes,
       isLoading: isLoading ?? this.isLoading,
       error:     clearError ? null : error ?? this.error,
+      syncingMailboxIds: syncingMailboxIds ?? this.syncingMailboxIds,
     );
   }
 
@@ -42,6 +49,19 @@ class MailboxesState {
 class MailboxesNotifier extends StateNotifier<MailboxesState> {
   MailboxesNotifier() : super(const MailboxesState()) {
     fetchMailboxes();
+  }
+
+  // ── Sync State Tracking ────────────────────────────────────
+  void markSyncStarted(int mailboxId) {
+    state = state.copyWith(
+      syncingMailboxIds: {...state.syncingMailboxIds, mailboxId},
+    );
+  }
+
+  void markSyncCompleted(int mailboxId) {
+    state = state.copyWith(
+      syncingMailboxIds: state.syncingMailboxIds.difference({mailboxId}),
+    );
   }
 
   // ── Fetch Mailboxes ───────────────────────────────────────
@@ -108,11 +128,70 @@ class MailboxesNotifier extends StateNotifier<MailboxesState> {
           
       final response = await ApiClient.get(
         endpoint, 
-        queryParameters: {'redirectUri': redirectUri},
+        queryParameters: {
+          'redirectUri': redirectUri,
+          'clientType': 'mobile',
+        },
       );
       return response.data['data']['url'] as String;
     } catch (_) {
       return null;
+    }
+  }
+
+  // ── Native Google Sign-In for Gmail Mailbox ───────────────
+  Future<bool> connectGmailNative({String? displayName}) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: '932834989443-ogaoin4l6ma2aimjn8sdut2bdpjejg16.apps.googleusercontent.com',
+        scopes: [
+          'https://www.googleapis.com/auth/gmail.readonly',
+          'https://www.googleapis.com/auth/gmail.modify',
+        ],
+        forceCodeForRefreshToken: true,
+      );
+
+      // Force account picker
+      await googleSignIn.signOut();
+      
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      if (googleUser == null) {
+        state = state.copyWith(isLoading: false);
+        return false;
+      }
+
+      final String? serverAuthCode = googleUser.serverAuthCode;
+      if (serverAuthCode == null) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Failed to get server auth code from Google.',
+        );
+        return false;
+      }
+
+      // Send the code to backend
+      await ApiClient.post(
+        ApiConstants.connectGmail,
+        data: {
+          'code': serverAuthCode,
+          'redirectUri': '', 
+          if (displayName != null) 'displayName': displayName,
+        },
+      );
+
+      await fetchMailboxes();
+      return true;
+    } on DioException catch (e) {
+      String msg = 'Failed to connect Gmail.';
+      if (e.response?.data is Map && e.response?.data['message'] != null) {
+        msg = e.response!.data['message'];
+      }
+      state = state.copyWith(isLoading: false, error: msg);
+      return false;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
     }
   }
 
@@ -121,6 +200,7 @@ class MailboxesNotifier extends StateNotifier<MailboxesState> {
     required MailboxProvider provider,
     required String code,
     required String redirectUri,
+    String? displayName,
   }) async {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
@@ -131,6 +211,7 @@ class MailboxesNotifier extends StateNotifier<MailboxesState> {
       await ApiClient.post(endpoint, data: {
         'code': code,
         'redirectUri': redirectUri,
+        if (displayName != null) 'displayName': displayName,
       });
       
       await fetchMailboxes();

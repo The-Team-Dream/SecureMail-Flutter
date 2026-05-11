@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
@@ -8,6 +9,7 @@ import 'package:securemail/features/mailboxes/screens/add_mailbox_shared_widgets
 import 'package:securemail/features/mailboxes/screens/add_mailbox/Step2ImapScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:securemail/core/constants/ApiConstants.dart';
 
 
 import 'package:securemail/core/extensions/context_snack_bar.dart';
@@ -64,24 +66,30 @@ class _Step1ProviderScreenState extends ConsumerState<Step1ProviderScreen> {
     if (_selected == MailboxProvider.imap) {
       Navigator.of(context)
           .push(MaterialPageRoute(builder: (_) => const Step2ImapScreen()));
+    } else if (_selected == MailboxProvider.gmail && !kIsWeb) {
+      // ── Native Google Sign-In Flow for Mobile ────────────────
+      final success = await ref.read(mailboxesProvider.notifier).connectGmailNative(displayName: name);
+      if (success) {
+        if (mounted) {
+          ref.read(addMailboxFormProvider.notifier).reset();
+          Navigator.of(context).pop();
+        }
+      }
     } else {
-      // OAuth Flow
+      // ── Browser OAuth Flow (Outlook & Web) ────────────────────
       final providerPath = _selected == MailboxProvider.gmail ? 'gmail' : 'outlook';
       
-      // Handle Platform-specific Redirect URI
       String redirectUri;
       if (kIsWeb) {
         redirectUri = '${Uri.base.origin}/mailboxes/$providerPath/callback';
       } else {
-        // Deep link for Mobile
-        redirectUri = 'securemail://mailboxes/$providerPath/callback';
+        final baseUrl = ApiConstants.baseUrlDev; 
+        redirectUri = '$baseUrl/mailboxes/$providerPath/callback';
       }
       
       final authUrl = await ref
           .read(mailboxesProvider.notifier)
           .getOAuthUrl(_selected, redirectUri);
-
-
 
       if (authUrl != null) {
         final uri = Uri.parse(authUrl);
