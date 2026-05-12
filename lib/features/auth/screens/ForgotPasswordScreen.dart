@@ -23,6 +23,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   bool  _sent      = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _emailCtrl.dispose();
     super.dispose();

@@ -29,6 +29,14 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _agreeToPolicy = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _usernameCtrl.dispose();
     _emailCtrl.dispose();
