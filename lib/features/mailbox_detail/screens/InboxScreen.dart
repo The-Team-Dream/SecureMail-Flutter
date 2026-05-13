@@ -16,15 +16,12 @@ class InboxScreen extends ConsumerStatefulWidget {
 
 class _InboxScreenState extends ConsumerState<InboxScreen> {
   StreamSubscription<Map<String, dynamic>>? _syncSub;
-
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
       ref.read(messagesProvider.notifier).fetchInbox(widget.mailboxId, refresh: false);
     });
-
-    // Listen for real-time sync completion from the backend
     _syncSub = socketService.syncEventsStream.listen((event) {
       final mailBoxId = event['mailBoxId'];
       if (mailBoxId == widget.mailboxId && mounted) {

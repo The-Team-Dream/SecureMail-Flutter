@@ -57,7 +57,6 @@ class _Step1ProviderScreenState extends ConsumerState<Step1ProviderScreen> {
       context.showSnackBar('Please enter a mailbox name', isError: true);
       return;
     }
-
     ref.read(addMailboxFormProvider.notifier).updateStep1(
           displayName: name,
           provider: _selected,

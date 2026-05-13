@@ -44,27 +44,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     final success = await ref.read(authProvider.notifier).login(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
         );
-
     if (!mounted) return;
-
     if (success) {
       final authState = ref.read(authProvider);
-
-      // ── الإيميل غير مفعّل → حوّله لصفحة OTP ──────────────
       if (authState.requiresVerification) {
         final email = authState.pendingEmail ?? _emailCtrl.text.trim();
-        // إعادة تعيين الـ flag قبل التنقل
         ref.read(authProvider.notifier).clearVerificationFlag();
         context.push(AppRoutes.otp, extra: email);
         return;
       }
-
-      // ── 2FA أو لوجين عادي → الداشبورد ────────────────────
       if (!authState.requiresVerification && authState.isAuthenticated) {
         context.go(AppRoutes.dashboard);
       }

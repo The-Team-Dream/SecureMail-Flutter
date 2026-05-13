@@ -7,11 +7,9 @@ import 'package:securemail/features/mailbox_detail/widgets/mailbox_folder_scaffo
 class SentScreen extends ConsumerStatefulWidget {
   final int mailboxId;
   const SentScreen({super.key, required this.mailboxId});
-
   @override
   ConsumerState<SentScreen> createState() => _SentScreenState();
 }
-
 class _SentScreenState extends ConsumerState<SentScreen> {
   @override
   void initState() {

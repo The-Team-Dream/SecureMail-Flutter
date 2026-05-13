@@ -18,8 +18,6 @@ class MailboxSideDrawer extends StatelessWidget {
   final String mailboxEmail;
   final int? unreadCount;
 
-
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;

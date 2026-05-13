@@ -13,11 +13,9 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 
 class Step2ImapScreen extends ConsumerStatefulWidget {
   const Step2ImapScreen({super.key});
-
   @override
   ConsumerState<Step2ImapScreen> createState() => _Step2ImapScreenState();
 }
-
 class _Step2ImapScreenState extends ConsumerState<Step2ImapScreen> {
   final _formKey = GlobalKey<FormState>();
   final _hostCtrl = TextEditingController(text: '');

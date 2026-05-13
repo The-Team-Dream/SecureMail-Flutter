@@ -10,12 +10,10 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 
 class Step4AdvancedScreen extends ConsumerStatefulWidget {
   const Step4AdvancedScreen({super.key});
-
   @override
   ConsumerState<Step4AdvancedScreen> createState() =>
       _Step4AdvancedScreenState();
 }
-
 class _Step4AdvancedScreenState extends ConsumerState<Step4AdvancedScreen> {
   String _syncFrequency = 'Every 15 minutes';
   final _fetchLimitCtrl = TextEditingController(text: '500');

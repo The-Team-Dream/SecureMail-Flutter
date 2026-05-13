@@ -32,7 +32,6 @@ class _SecurityReportScreenState extends State<SecurityReportScreen> {
       _loading = true;
       _error = null;
     });
-
     try {
       final data = await MockData.simulate(MockData.mockSecurityReportData);
       if (mounted) {

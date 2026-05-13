@@ -9,17 +9,13 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 
 class Step5ReviewScreen extends ConsumerStatefulWidget {
   const Step5ReviewScreen({super.key});
-
   @override
   ConsumerState<Step5ReviewScreen> createState() => _Step5ReviewScreenState();
 }
-
 class _Step5ReviewScreenState extends ConsumerState<Step5ReviewScreen> {
   bool _isSaving = false;
-
   Future<void> _save() async {
     setState(() => _isSaving = true);
-
     try {
       final formData = ref.read(addMailboxFormProvider);
       final success = await ref
@@ -27,7 +23,6 @@ class _Step5ReviewScreenState extends ConsumerState<Step5ReviewScreen> {
           .addMailbox(formData);
 
       if (!mounted) return;
-
       if (success) {
         ref.read(addMailboxFormProvider.notifier).reset();
         Navigator.of(context).popUntil((route) => route.isFirst);

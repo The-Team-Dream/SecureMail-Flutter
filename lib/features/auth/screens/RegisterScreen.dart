@@ -47,14 +47,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-
     final success = await ref.read(authProvider.notifier).register(
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
           confirmPassword: _confirmPassCtrl.text,
           username: _usernameCtrl.text.trim(),
         );
-
     if (success && mounted) {
       context.push(AppRoutes.otp, extra: _emailCtrl.text.trim());
     }
@@ -79,7 +77,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   const Color.fromARGB(136, 17, 52, 43)
                 ]
         : [const Color(0xFFF2FBF7), const Color(0xFFE8F6F2), const Color(0xFFF2FBF7)],
-       
         
   ),
 ),

@@ -28,16 +28,12 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
   @override
   void initState() {
     super.initState();
-
-    // Listen for sync start events
     _syncStartSub = socketService.syncStartStream.listen((event) {
       final id = event['mailBoxId'];
       if (id is int && mounted) {
         ref.read(mailboxesProvider.notifier).markSyncStarted(id);
       }
     });
-
-    // Listen for sync complete events
     _syncDoneSub = socketService.syncEventsStream.listen((event) {
       final id = event['mailBoxId'];
       if (id is int && mounted) {
@@ -45,13 +41,10 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
         ref.read(mailboxesProvider.notifier).fetchMailboxes();
       }
     });
-
-    // Timer to update timeago relative dates periodically
     _timeagoTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (mounted) setState(() {});
     });
   }
-
   @override
   void dispose() {
     _searchCtrl.dispose();

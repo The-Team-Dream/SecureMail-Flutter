@@ -20,7 +20,6 @@ class _SpamScreenState extends ConsumerState<SpamScreen> {
       ref.read(messagesProvider.notifier).fetchSpam(widget.mailboxId);
     });
   }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(messagesProvider);

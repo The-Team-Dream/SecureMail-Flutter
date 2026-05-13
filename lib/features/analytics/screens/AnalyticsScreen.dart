@@ -9,7 +9,6 @@ import '../models/analytics_model.dart';
 
 class Analyticsscreen extends ConsumerWidget {
   const Analyticsscreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final overviewAsync = ref.watch(analyticsOverviewProvider);
@@ -35,12 +34,13 @@ class Analyticsscreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Overview Cards (إعادة المسميات الأصلية مع ربط القيم)
                 _buildMetricCard(
                   context: context,
                   title: 'TOTAL THREATS BLOCKED',
-                  value: NumberFormat('#,###').format(overview.totalPhishingDetected + overview.totalSpamDetected),
-                  change: '+12%', // قيمة افتراضية للحفاظ على التصميم
+                  value: NumberFormat('#,###').format(
+                      overview.totalPhishingDetected +
+                          overview.totalSpamDetected),
+                  change: '+12%',
                   subtitle: 'Comparison vs previous 30 days',
                   icon: Icons.shield_outlined,
                   isPositive: true,
@@ -50,7 +50,7 @@ class Analyticsscreen extends ConsumerWidget {
                   context: context,
                   title: 'CRITICAL ALERTS',
                   value: overview.totalPhishingDetected.toString(),
-                  change: '-5%', // قيمة افتراضية للحفاظ على التصميم
+                  change: '-5%',
                   subtitle: 'Active incidents requiring attention',
                   icon: Icons.warning_amber_rounded,
                   isPositive: true,
@@ -61,30 +61,38 @@ class Analyticsscreen extends ConsumerWidget {
 
                 const SizedBox(height: AppSpacing.x8),
                 activityAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
                   error: (e, _) => Text('Error loading activity: $e'),
-                  data: (activity) => _buildWeeklyDistribution(context, activity),
+                  data: (activity) =>
+                      _buildWeeklyDistribution(context, activity),
                 ),
 
                 const SizedBox(height: AppSpacing.x8),
                 _buildRecentEventsHeader(context),
                 const SizedBox(height: AppSpacing.x3),
                 // إعادة استخدام الموديلات الأصلية لضمان عدم تغيير منطق الواجهة
-                _buildEventItem(context, SecurityEvent(
-                  title: 'Suspicious Login',
-                  description: 'New IP detected in USA',
-                  severity: EventSeverity.high,
-                  icon: Icons.security,
-                  timestamp: DateTime.now().subtract(const Duration(minutes: 5)),
-                )),
-                _buildEventItem(context, SecurityEvent(
-                  title: 'Mailbox Sync',
-                  description: 'Successfully synced 42 emails',
-                  severity: EventSeverity.info,
-                  icon: Icons.sync,
-                  timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
-                )),
-                
+                _buildEventItem(
+                    context,
+                    SecurityEvent(
+                      title: 'Suspicious Login',
+                      description: 'New IP detected in USA',
+                      severity: EventSeverity.high,
+                      icon: Icons.security,
+                      timestamp:
+                          DateTime.now().subtract(const Duration(minutes: 5)),
+                    )),
+                _buildEventItem(
+                    context,
+                    SecurityEvent(
+                      title: 'Mailbox Sync',
+                      description: 'Successfully synced 42 emails',
+                      severity: EventSeverity.info,
+                      icon: Icons.sync,
+                      timestamp:
+                          DateTime.now().subtract(const Duration(minutes: 15)),
+                    )),
+
                 const SizedBox(height: AppSpacing.x8),
               ],
             ),
@@ -199,8 +207,13 @@ class Analyticsscreen extends ConsumerWidget {
     // حساب تقريبي لصحة النظام بناءً على نسبة الإيميلات السليمة
     final total = data.totalEmails > 0 ? data.totalEmails : 1;
     final threats = data.totalPhishingDetected + data.totalSpamDetected;
-    final healthScore = (((total - threats) / total) * 100).toInt().clamp(0, 100);
-    final status = healthScore > 90 ? 'EXCELLENT' : healthScore > 70 ? 'GOOD' : 'WARNING';
+    final healthScore =
+        (((total - threats) / total) * 100).toInt().clamp(0, 100);
+    final status = healthScore > 90
+        ? 'EXCELLENT'
+        : healthScore > 70
+            ? 'GOOD'
+            : 'WARNING';
 
     return Container(
       padding: const EdgeInsets.all(AppSpacing.x5),
@@ -264,7 +277,8 @@ class Analyticsscreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildWeeklyDistribution(BuildContext context, List<ActivityDataPoint> data) {
+  Widget _buildWeeklyDistribution(
+      BuildContext context, List<ActivityDataPoint> data) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.x5),
       decoration: BoxDecoration(
@@ -283,7 +297,7 @@ class Analyticsscreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppSpacing.x6),
-          
+
           // Chart based on real activity data
           SizedBox(
             height: 120,
@@ -300,7 +314,9 @@ class Analyticsscreen extends ConsumerWidget {
                       width: 12,
                       height: height,
                       decoration: BoxDecoration(
-                        color: item.phishing > 0 ? context.danger : context.button1,
+                        color: item.phishing > 0
+                            ? context.danger
+                            : context.button1,
                         borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                     ),
@@ -317,16 +333,18 @@ class Analyticsscreen extends ConsumerWidget {
               }).toList(),
             ),
           ),
-          
+
           const SizedBox(height: AppSpacing.x6),
           const Divider(height: 1),
           const SizedBox(height: AppSpacing.x4),
-          
+
           Row(
             children: [
-              _buildLegendItem(context, 'Safe Traffic', 'Regular activity', context.button1),
+              _buildLegendItem(
+                  context, 'Safe Traffic', 'Regular activity', context.button1),
               const Spacer(),
-              _buildLegendItem(context, 'Threat Detected', 'Security risk', context.danger),
+              _buildLegendItem(
+                  context, 'Threat Detected', 'Security risk', context.danger),
             ],
           ),
         ],
@@ -334,7 +352,8 @@ class Analyticsscreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildLegendItem(BuildContext context, String label, String value, Color color) {
+  Widget _buildLegendItem(
+      BuildContext context, String label, String value, Color color) {
     return Row(
       children: [
         Container(
@@ -346,8 +365,12 @@ class Analyticsscreen extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: AppTextStyles.bodyS.copyWith(color: context.text3, fontSize: 11)),
-            Text(value, style: AppTextStyles.labelS.copyWith(color: context.text1, fontWeight: FontWeight.bold)),
+            Text(label,
+                style: AppTextStyles.bodyS
+                    .copyWith(color: context.text3, fontSize: 11)),
+            Text(value,
+                style: AppTextStyles.labelS.copyWith(
+                    color: context.text1, fontWeight: FontWeight.bold)),
           ],
         ),
       ],
@@ -447,7 +470,8 @@ class Analyticsscreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Text(
                   '${DateFormat.jm().format(event.timestamp)} ago',
-                  style: AppTextStyles.labelS.copyWith(color: context.text3.withOpacity(0.7), fontSize: 10),
+                  style: AppTextStyles.labelS.copyWith(
+                      color: context.text3.withOpacity(0.7), fontSize: 10),
                 ),
               ],
             ),

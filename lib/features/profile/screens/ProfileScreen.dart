@@ -15,12 +15,10 @@ import 'package:securemail/features/profile/models/user_profile_model.dart';
 
 class Profilescreen extends ConsumerWidget {
   const Profilescreen({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(profileProvider);
     final profile = state.profile;
-
     // Listen for errors
     ref.listen(profileProvider.select((s) => s.error), (previous, next) {
       if (next != null && context.mounted) {
@@ -42,7 +40,6 @@ class Profilescreen extends ConsumerWidget {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: () => ref.read(profileProvider.notifier).fetchProfile(),
-
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
@@ -51,27 +48,18 @@ class Profilescreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    // ── Avatar + Name ──────────────────────
                     _buildProfileHeader(context, ref, state),
                     const SizedBox(height: AppSpacing.x5),
-
-                    // ── Edit Profile Button ────────────────
                     _buildEditProfileButton(context),
                     const SizedBox(height: AppSpacing.x8),
-
-                    // ── Security & Privacy ─────────────────
                     _buildSectionLabel(context, 'SECURITY & PRIVACY'),
                     const SizedBox(height: AppSpacing.x2),
                     _buildSecuritySection(context, profile),
                     const SizedBox(height: AppSpacing.x6),
-
-                    // ── Preferences ────────────────────────
                     _buildSectionLabel(context, 'PREFERENCES'),
                     const SizedBox(height: AppSpacing.x2),
                     _buildPreferencesSection(context, profile),
                     const SizedBox(height: AppSpacing.x8),
-
-                    // ── Logout Button ──────────────────────
                     _buildLogoutButton(context, ref, state.isLoggingOut),
                     const SizedBox(height: AppSpacing.x8),
                   ],

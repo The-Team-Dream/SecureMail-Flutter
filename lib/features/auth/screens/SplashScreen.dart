@@ -19,27 +19,22 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _fadeCtrl;
   late final Animation<double> _progressAnim;
   late final Animation<double> _fadeAnim;
-
   String _statusText = 'INITIALIZING BIOMETRICS';
-
   final List<_CheckStep> _steps = [
     _CheckStep(label: 'INITIALIZING BIOMETRICS', target: 0.30),
     _CheckStep(label: 'VERIFYING ENCRYPTION KEYS', target: 0.60),
     _CheckStep(label: 'SYSTEM INTEGRITY CHECK', target: 0.88),
     _CheckStep(label: 'SECURING CONNECTION', target: 1.00),
   ];
-
   @override
   void initState() {
     super.initState();
-
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeIn);
     _fadeCtrl.forward();
-
     _progressCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
@@ -48,10 +43,8 @@ class _SplashScreenState extends State<SplashScreen>
       parent: _progressCtrl,
       curve: Curves.easeInOut,
     );
-
     _progressCtrl.addListener(_updateStatus);
     _progressCtrl.forward();
-
     _progressCtrl.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         _navigateNext();

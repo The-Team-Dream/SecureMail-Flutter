@@ -37,17 +37,14 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   Future<void> _submit() async {
     if (_otp.length < 6) return;
-
     final success = await ref.read(otpProvider.notifier).verifyOtp(
       email: widget.email,
       otp:   _otp,
     );
-
     if (success && mounted) {
       context.go(AppRoutes.login);
     }
   }
-
   Future<void> _resend() async {
     await ref.read(otpProvider.notifier).resendOtp(email: widget.email);
   }

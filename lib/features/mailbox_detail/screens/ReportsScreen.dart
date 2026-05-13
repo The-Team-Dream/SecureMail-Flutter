@@ -76,20 +76,16 @@ class ReportsScreen extends StatefulWidget {
     this.mailboxEmail = '',
     this.unreadCount,
   });
-
   final String mailboxEmail;
   final int? unreadCount;
-
   @override
   State<ReportsScreen> createState() => _ReportsScreenState();
 }
-
 class _ReportsScreenState extends State<ReportsScreen> {
   final _searchController = TextEditingController();
   String _activeFilter = 'All';
   String _query = '';
   late List<ReportIncident> _incidents;
-
   @override
   void initState() {
     super.initState();

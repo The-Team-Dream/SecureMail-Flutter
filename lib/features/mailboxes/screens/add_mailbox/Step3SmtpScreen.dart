@@ -12,11 +12,9 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 
 class Step3SmtpScreen extends ConsumerStatefulWidget {
   const Step3SmtpScreen({super.key});
-
   @override
   ConsumerState<Step3SmtpScreen> createState() => _Step3SmtpScreenState();
 }
-
 class _Step3SmtpScreenState extends ConsumerState<Step3SmtpScreen> {
   final _formKey = GlobalKey<FormState>();
   final _hostCtrl = TextEditingController(text: '');
