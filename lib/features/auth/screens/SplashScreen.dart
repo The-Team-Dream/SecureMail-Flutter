@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:securemail/features/auth/providers/auth_provider.dart';
 import 'package:securemail/shared/widgets/auth_gradient_background.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
   late final AnimationController _progressCtrl;
   late final AnimationController _fadeCtrl;
@@ -50,6 +52,14 @@ class _SplashScreenState extends State<SplashScreen>
         _navigateNext();
       }
     });
+
+    // If already authenticated (switching accounts), skip the animation delay entirely
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (ref.read(authProvider).isAuthenticated && mounted) {
+        _progressCtrl.stop();
+        _navigateNext();
+      }
+    });
   }
 
   void _updateStatus() {
@@ -66,7 +76,13 @@ class _SplashScreenState extends State<SplashScreen>
 
   void _navigateNext() {
     if (!mounted) return;
-    context.go(AppRoutes.login);
+    // If already authenticated (e.g. app rebuilt due to account switch), go straight to dashboard
+    final isAuthenticated = ref.read(authProvider).isAuthenticated;
+    if (isAuthenticated) {
+      context.go(AppRoutes.dashboard);
+    } else {
+      context.go(AppRoutes.login);
+    }
   }
 
   @override

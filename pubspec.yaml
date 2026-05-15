@@ -49,6 +49,7 @@ dependencies:
   webview_flutter: ^4.13.1
   file_picker: ^11.0.2
   flutter_quill: ^11.5.0
+  path_provider: ^2.1.5
 
 dependency_overrides:
   quill_native_bridge_windows: 0.0.2

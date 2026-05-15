@@ -20,6 +20,7 @@ class EmailModel {
   final double phishingScore;
   final String? malwareVerdict;
   final Map<String, dynamic>? aiReport;
+  final Map<String, dynamic>? securityReport;
   final String receivedAt;
   final List<AttachmentModel> attachments;
 
@@ -40,6 +41,7 @@ class EmailModel {
     required this.phishingScore,
     this.malwareVerdict,
     this.aiReport,
+    this.securityReport,
     required this.receivedAt,
     required this.attachments,
   });
@@ -61,6 +63,7 @@ class EmailModel {
     double? phishingScore,
     String? malwareVerdict,
     Map<String, dynamic>? aiReport,
+    Map<String, dynamic>? securityReport,
     String? receivedAt,
     List<AttachmentModel>? attachments,
   }) {
@@ -81,6 +84,7 @@ class EmailModel {
       phishingScore:   phishingScore ?? this.phishingScore,
       malwareVerdict:  malwareVerdict ?? this.malwareVerdict,
       aiReport:        aiReport ?? this.aiReport,
+      securityReport:  securityReport ?? this.securityReport,
       receivedAt:      receivedAt ?? this.receivedAt,
       attachments:     attachments ?? this.attachments,
     );
@@ -104,6 +108,7 @@ class EmailModel {
       phishingScore:   (json['phishingScore'] ?? 0).toDouble(),
       malwareVerdict:  json['malwareVerdict'] as String?,
       aiReport:        json['aiReport'] as Map<String, dynamic>?,
+      securityReport:  json['securityReport'] as Map<String, dynamic>?,
       receivedAt:      json['receivedAt'] as String? ?? '',
       attachments:     (json['attachments'] as List?)
               ?.map((a) => AttachmentModel.fromJson(a))
@@ -143,6 +148,8 @@ class EmailModel {
       badgeLabel:  badgeLabel,
       badgeColor:  badgeColor,
       isActive:    !isRead,
+      hasAttachments: attachments.isNotEmpty,
+      attachmentNames: attachments.map((a) => a.filename).toList(),
     );
   }
 

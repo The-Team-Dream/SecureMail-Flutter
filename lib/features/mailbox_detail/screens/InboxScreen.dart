@@ -32,6 +32,16 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant InboxScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mailboxId != widget.mailboxId) {
+      Future.microtask(() {
+        ref.read(messagesProvider.notifier).fetchInbox(widget.mailboxId, refresh: true);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _syncSub?.cancel();
     super.dispose();

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 import 'package:securemail/features/mailbox_detail/screens/SecurityReportScreen.dart';
 import 'package:securemail/features/mailbox_detail/widgets/mailbox_side_drawer.dart';
-import 'package:securemail/core/mock/mock_data.dart';
+import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
+
 // ── Data Models ────────────────────────────────────────────
 
 enum IncidentType { criticalThreat, suspiciousActivity, systemUpdate }
@@ -50,7 +52,7 @@ class ReportIncident {
       id: json['id'] as String,
       type: IncidentType.values.firstWhere(
         (e) => e.name == json['type'],
-        orElse: () => IncidentType.systemUpdate,
+        orElse: () => IncidentType.suspiciousActivity,
       ),
       title: json['title'] as String,
       description: json['description'] as String,
@@ -68,7 +70,7 @@ class ReportIncident {
 
 // ── Reports Screen ─────────────────────────────────────────
 
-class ReportsScreen extends StatefulWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   final int mailboxId;
   const ReportsScreen({
     super.key,
@@ -79,19 +81,28 @@ class ReportsScreen extends StatefulWidget {
   final String mailboxEmail;
   final int? unreadCount;
   @override
-  State<ReportsScreen> createState() => _ReportsScreenState();
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
-class _ReportsScreenState extends State<ReportsScreen> {
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   final _searchController = TextEditingController();
   String _activeFilter = 'All';
   String _query = '';
-  late List<ReportIncident> _incidents;
+
   @override
   void initState() {
     super.initState();
-    _incidents = MockData.mockIncidents
-        .map((e) => ReportIncident.fromJson(e))
-        .toList();
+    Future.microtask(() =>
+        ref.read(messagesProvider.notifier).fetchReports(widget.mailboxId));
+  }
+
+  @override
+  void didUpdateWidget(covariant ReportsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mailboxId != widget.mailboxId) {
+      Future.microtask(() =>
+          ref.read(messagesProvider.notifier).fetchReports(widget.mailboxId));
+    }
   }
 
   @override
@@ -100,8 +111,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     super.dispose();
   }
 
-  List<ReportIncident> get _filtered {
-    var result = _incidents;
+  List<ReportIncident> _getFiltered(List<ReportIncident> incidents) {
+    var result = incidents;
 
     if (_query.trim().isNotEmpty) {
       final q = _query.trim().toLowerCase();
@@ -131,22 +142,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  int get _criticalCount =>
-      _incidents.where((i) => i.type == IncidentType.criticalThreat).length;
-
-  int get _resolvedCount =>
-      _incidents.where((i) => i.type == IncidentType.systemUpdate).length;
-
-  int get _pendingCount =>
-      _incidents.where((i) => i.type == IncidentType.suspiciousActivity).length;
-
   void _markAllRead() {
-    setState(() {
-      _incidents = _incidents.map((i) => i.copyWith(isRead: true)).toList();
-    });
+    // Implement mark all read if needed on backend
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('All incidents marked as read',
+        content: Text('Mark all read requested',
             style: AppTextStyles.bodyS.copyWith(color: Colors.white)),
         backgroundColor: context.button1,
         behavior: SnackBarBehavior.floating,
@@ -157,26 +157,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   void _onReviewDetails(ReportIncident incident) {
-    // علّم الـ incident كـ read
-    setState(() {
-      final idx = _incidents.indexOf(incident);
-      if (idx != -1) {
-        _incidents = List.from(_incidents)
-          ..[idx] = incident.copyWith(isRead: true);
-      }
-    });
-
     // افتح شاشة التفاصيل وبعّت الـ ID للـ API
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => SecurityReportScreen(incidentId: incident.id),
+        builder: (_) => SecurityReportScreen(
+          incidentId: incident.id,
+          mailboxId: widget.mailboxId,
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final state = ref.watch(messagesProvider);
+    final incidents =
+        state.reports.map((e) => ReportIncident.fromJson(e)).toList();
+    final filtered = _getFiltered(incidents);
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -197,44 +194,51 @@ class _ReportsScreenState extends State<ReportsScreen> {
               onSearchChanged: (q) => setState(() => _query = q),
             ),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
-                children: [
-                  _StatsRow(
-                    critical: _criticalCount,
-                    resolved: _resolvedCount,
-                    pending: _pendingCount,
-                  ),
-                  const SizedBox(height: 28),
-                  _SectionHeader(
-                    label: 'RECENT INCIDENTS',
-                    action: 'Mark all read',
-                    onActionTap: _markAllRead,
-                  ),
-                  const SizedBox(height: 14),
-                  if (filtered.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 40),
-                      child: Center(
-                        child: Text(
-                          'No incidents found',
-                          style: AppTextStyles.bodyM
-                              .copyWith(color: context.text3),
-                        ),
-                      ),
-                    )
-                  else
-                    ...filtered.map(
-                      (incident) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: _IncidentCard(
-                          incident: incident,
-                          onReviewTap: () => _onReviewDetails(incident),
-                        ),
+              child: state.isLoading && incidents.isEmpty
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: () => ref
+                          .read(messagesProvider.notifier)
+                          .fetchReports(widget.mailboxId),
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
+                        children: [
+                          _StatsRow(
+                            critical: state.securityStats['critical'] ?? 0,
+                            resolved: state.securityStats['resolved'] ?? 0,
+                            pending: state.securityStats['pending'] ?? 0,
+                          ),
+                          const SizedBox(height: 28),
+                          _SectionHeader(
+                            label: 'RECENT INCIDENTS',
+                            action: 'Mark all read',
+                            onActionTap: _markAllRead,
+                          ),
+                          const SizedBox(height: 14),
+                          if (filtered.isEmpty && !state.isLoading)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 40),
+                              child: Center(
+                                child: Text(
+                                  'No incidents found',
+                                  style: AppTextStyles.bodyM
+                                      .copyWith(color: context.text3),
+                                ),
+                              ),
+                            )
+                          else
+                            ...filtered.map(
+                              (incident) => Padding(
+                                padding: const EdgeInsets.only(bottom: 14),
+                                child: _IncidentCard(
+                                  incident: incident,
+                                  onReviewTap: () => _onReviewDetails(incident),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                ],
-              ),
             ),
           ],
         ),

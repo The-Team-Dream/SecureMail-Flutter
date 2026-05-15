@@ -18,7 +18,8 @@ class AlertsRepository implements IAlertsRepository {
       ApiConstants.notifications,
       queryParameters: {'page': page, 'limit': limit},
     );
-    final List<dynamic> data = response.data['data'];
+    final dynamic responseData = response.data['data'];
+    final List<dynamic> data = responseData is List ? responseData : responseData['data'];
     return data.map((n) => NotificationModel.fromJson(n)).toList();
   }
 

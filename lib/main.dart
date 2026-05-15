@@ -5,6 +5,8 @@ import 'package:securemail/core/theme/theme_data/ThemeDataLight.dart';
 import 'package:securemail/core/theme/theme_data/ThemeDataDark.dart';
 import 'package:securemail/core/theme/theme_controller.dart';
 
+import 'package:securemail/features/auth/providers/auth_provider.dart';
+
 import 'package:securemail/core/utils/url_strategy_helper.dart'
     if (dart.library.html) 'package:securemail/core/utils/url_strategy_web.dart';
 
@@ -26,14 +28,19 @@ class SecureMail extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeState = ref.watch(themeProvider);
+    final router = ref.watch(routerProvider);
+    // Watch accessToken: null when logged out, unique per session when logged in.
+    // ValueKey forces MaterialApp (and its entire widget tree) to rebuild on user change.
+    final token = ref.watch(authProvider.select((s) => s.accessToken));
 
     return MaterialApp.router(
+      key: ValueKey(token),
       debugShowCheckedModeBanner: false,
       title: 'SecureMail',
       theme: getThemeLight(),
       darkTheme: getThemeDark(),
       themeMode: themeState.themeMode,
-      routerConfig: appRouter,
+      routerConfig: router,
     );
   }
 }

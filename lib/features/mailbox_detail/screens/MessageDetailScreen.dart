@@ -11,6 +11,11 @@ import 'package:securemail/features/mailbox_detail/models/mailbox_message.dart';
 import 'package:securemail/features/mailbox_detail/widgets/reclassify_sheet.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:securemail/core/router/app_router.dart';
+import 'package:securemail/features/mailbox_detail/models/attachment_model.dart';
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class MessageDetailScreen extends ConsumerStatefulWidget {
@@ -85,9 +90,15 @@ class _MessageDetailScreenState extends ConsumerState<MessageDetailScreen> {
                             setState(() => _senderExpanded = !_senderExpanded),
                       ),
                       const _Divider(),
-                      if (email != null) 
-                        _MessageBody(email: email)
-                      else
+                      if (email != null) ...[
+                        _MessageBody(email: email),
+                        if (email.attachments.isNotEmpty)
+                          _AttachmentsSection(
+                            attachments: email.attachments,
+                            mailboxId: widget.mailboxId,
+                            emailId: email.id,
+                          ),
+                      ] else
                         Padding(
                           padding: const EdgeInsets.all(20),
                           child: Text(
@@ -809,5 +820,197 @@ class _MoreMenuSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// ── Attachments Section ─────────────────────────────────────
+
+class _AttachmentsSection extends ConsumerWidget {
+  const _AttachmentsSection({
+    required this.attachments,
+    required this.mailboxId,
+    required this.emailId,
+  });
+
+  final List<AttachmentModel> attachments;
+  final int mailboxId;
+  final int emailId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.attachment_rounded, size: 18, color: context.text2),
+              const SizedBox(width: 8),
+              Text(
+                'Attachments (${attachments.length})',
+                style: AppTextStyles.headingS.copyWith(color: context.text1),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: attachments.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final att = attachments[index];
+              return _AttachmentTile(
+                attachment: att,
+                onTap: () => _handleDownload(context, ref, att),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleDownload(BuildContext context, WidgetRef ref, AttachmentModel att) async {
+    if (att.storagePath == null) return;
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Preparing ${att.filename}...')),
+      );
+
+      // 1. Download to temporary directory
+      final dio = Dio();
+      final tempDir = await getTemporaryDirectory();
+      final tempPath = '${tempDir.path}/${att.filename}';
+      
+      await dio.download(att.storagePath!, tempPath);
+
+      // 2. Use FilePicker to save the file to a user-chosen location
+      // This avoids Permission Denied errors on modern Android (Scoped Storage)
+      final String? outputFile = await FilePicker.saveFile(
+        dialogTitle: 'Save Attachment',
+        fileName: att.filename,
+        bytes: await File(tempPath).readAsBytes(),
+      );
+
+      if (outputFile != null && context.mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Saved: ${att.filename}'),
+            backgroundColor: const Color(0xFF8CEB2F),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save file: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+}
+
+class _AttachmentTile extends StatelessWidget {
+  const _AttachmentTile({required this.attachment, required this.onTap});
+
+  final AttachmentModel attachment;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final extension = attachment.filename.split('.').last.toUpperCase();
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.card1,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: context.fieldBorder.withValues(alpha: 0.1)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _getFileColor(extension).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                _getFileIcon(extension),
+                color: _getFileColor(extension),
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    attachment.filename,
+                    style: AppTextStyles.bodyM.copyWith(
+                      color: context.text1,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    _formatSize(attachment.size),
+                    style: AppTextStyles.caption.copyWith(color: context.text3),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.download_rounded, color: context.text3, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getFileIcon(String ext) {
+    switch (ext) {
+      case 'PDF': return Icons.picture_as_pdf_rounded;
+      case 'JPG':
+      case 'PNG':
+      case 'JPEG': return Icons.image_rounded;
+      case 'DOC':
+      case 'DOCX': return Icons.description_rounded;
+      case 'ZIP':
+      case 'RAR': return Icons.folder_zip_rounded;
+      default: return Icons.insert_drive_file_rounded;
+    }
+  }
+
+  Color _getFileColor(String ext) {
+    switch (ext) {
+      case 'PDF': return Colors.redAccent;
+      case 'JPG':
+      case 'PNG':
+      case 'JPEG': return Colors.blueAccent;
+      case 'ZIP':
+      case 'RAR': return Colors.orangeAccent;
+      default: return Colors.blueGrey;
+    }
+  }
+
+  String _formatSize(int bytes) {
+    if (bytes <= 0) return '0 B';
+    const suffixes = ['B', 'KB', 'MB', 'GB'];
+    var i = (bytes.toString().length - 1) / 3;
+    final index = i.floor();
+    return '${(bytes / (1 << (index * 10))).toStringAsFixed(1)} ${suffixes[index]}';
   }
 }

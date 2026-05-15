@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
-import 'package:securemail/core/mock/mock_data.dart';
 import 'package:securemail/features/mailbox_detail/models/security_report_model.dart';
+import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
 
-class SecurityReportScreen extends StatefulWidget {
+class SecurityReportScreen extends ConsumerStatefulWidget {
   const SecurityReportScreen({
     super.key,
     required this.incidentId,
+    required this.mailboxId,
   });
 
   final String incidentId;
+  final int mailboxId;
 
   @override
-  State<SecurityReportScreen> createState() => _SecurityReportScreenState();
+  ConsumerState<SecurityReportScreen> createState() => _SecurityReportScreenState();
 }
 
-class _SecurityReportScreenState extends State<SecurityReportScreen> {
-  SecurityReportModel? _report;
+class _SecurityReportScreenState extends ConsumerState<SecurityReportScreen> {
   bool _loading = true;
   String? _error;
 
@@ -33,21 +35,78 @@ class _SecurityReportScreenState extends State<SecurityReportScreen> {
       _error = null;
     });
     try {
-      final data = await MockData.simulate(MockData.mockSecurityReportData);
+      final emailId = int.tryParse(widget.incidentId);
+      if (emailId == null) {
+        throw Exception('Invalid incident ID');
+      }
+      
+      await ref.read(messagesProvider.notifier).fetchEmailDetail(widget.mailboxId, emailId);
+      
       if (mounted) {
         setState(() {
-          _report = SecurityReportModel.fromJson(data);
           _loading = false;
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load security report.';
           _loading = false;
+          _error = e.toString();
         });
       }
     }
+  }
+
+  Widget _buildBody(BuildContext context) {
+    final state = ref.watch(messagesProvider);
+    final reportMap = state.selectedEmail?.securityReport;
+    final report = reportMap != null ? SecurityReportModel.fromJson(reportMap) : null;
+
+    if (_loading) {
+      return Center(child: CircularProgressIndicator(color: context.button1));
+    }
+    if (_error != null || report == null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: const Color(0xFFFF5252), size: 48),
+            const SizedBox(height: 16),
+            Text(_error ?? 'No security report available for this email.',
+                style: AppTextStyles.bodyM.copyWith(color: context.text1)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchReport,
+              style: ElevatedButton.styleFrom(backgroundColor: context.button1),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      children: [
+        _buildMaliciousHeader(context, report),
+        const SizedBox(height: 24),
+        _buildSectionTitle(context, 'THREAT DETAILS'),
+        const SizedBox(height: 12),
+        _buildThreatDetailsCard(context, report),
+        const SizedBox(height: 16),
+        _buildRecommendationCard(context, report),
+        const SizedBox(height: 24),
+        _buildSectionTitle(context, 'SUGGESTED ACTIONS'),
+        const SizedBox(height: 12),
+        _buildSuggestedActions(context, report),
+        const SizedBox(height: 24),
+        ...report.anomalies
+            .map((anomaly) => _buildAnomalyCard(context, anomaly))
+            .toList(),
+        const SizedBox(height: 32),
+        _buildFooter(context, report),
+      ],
+    );
   }
 
   @override
@@ -80,56 +139,6 @@ class _SecurityReportScreenState extends State<SecurityReportScreen> {
         ),
       ),
       body: _buildBody(context),
-    );
-  }
-
-  Widget _buildBody(BuildContext context) {
-    if (_loading) {
-      return Center(child: CircularProgressIndicator(color: context.button1));
-    }
-    if (_error != null || _report == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.error_outline, color: const Color(0xFFFF5252), size: 48),
-            const SizedBox(height: 16),
-            Text(_error ?? 'Unknown error',
-                style: AppTextStyles.bodyM.copyWith(color: context.text1)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _fetchReport,
-              style: ElevatedButton.styleFrom(backgroundColor: context.button1),
-              child: const Text('Retry', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final report = _report!;
-
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      children: [
-        _buildMaliciousHeader(context, report),
-        const SizedBox(height: 24),
-        _buildSectionTitle(context, 'THREAT DETAILS'),
-        const SizedBox(height: 12),
-        _buildThreatDetailsCard(context, report),
-        const SizedBox(height: 16),
-        _buildRecommendationCard(context, report),
-        const SizedBox(height: 24),
-        _buildSectionTitle(context, 'SUGGESTED ACTIONS'),
-        const SizedBox(height: 12),
-        _buildSuggestedActions(context, report),
-        const SizedBox(height: 24),
-        ...report.anomalies
-            .map((anomaly) => _buildAnomalyCard(context, anomaly))
-            .toList(),
-        const SizedBox(height: 32),
-        _buildFooter(context, report),
-      ],
     );
   }
 

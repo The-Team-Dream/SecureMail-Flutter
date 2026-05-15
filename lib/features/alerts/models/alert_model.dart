@@ -15,6 +15,9 @@ class AlertNotification {
   final IconData icon;
   final List<String>? actions;
 
+  final int? mailBoxId;
+  final int? emailId;
+
   AlertNotification({
     required this.id,
     required this.title,
@@ -25,20 +28,24 @@ class AlertNotification {
     this.isRead = false,
     required this.icon,
     this.actions,
+    this.mailBoxId,
+    this.emailId,
   });
 
   // Factory for API integration
   factory AlertNotification.fromJson(Map<String, dynamic> json) {
     return AlertNotification(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
-      description: json['description'] ?? '',
-      timestamp: DateTime.parse(json['timestamp'] ?? DateTime.now().toString()),
-      category: _parseCategory(json['category']),
+      description: json['message'] ?? json['description'] ?? '',
+      timestamp: DateTime.parse(json['createdAt'] ?? json['timestamp'] ?? DateTime.now().toString()),
+      category: _parseCategory(json['type'] ?? json['category']),
       severity: _parseSeverity(json['severity']),
       isRead: json['isRead'] ?? false,
       icon: _parseIcon(json['icon']),
       actions: (json['actions'] as List?)?.map((e) => e.toString()).toList(),
+      mailBoxId: json['mailBoxId'] as int?,
+      emailId: json['emailId'] as int?,
     );
   }
 

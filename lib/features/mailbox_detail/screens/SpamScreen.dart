@@ -20,6 +20,16 @@ class _SpamScreenState extends ConsumerState<SpamScreen> {
       ref.read(messagesProvider.notifier).fetchSpam(widget.mailboxId);
     });
   }
+
+  @override
+  void didUpdateWidget(covariant SpamScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mailboxId != widget.mailboxId) {
+      Future.microtask(() {
+        ref.read(messagesProvider.notifier).fetchSpam(widget.mailboxId, refresh: true);
+      });
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(messagesProvider);

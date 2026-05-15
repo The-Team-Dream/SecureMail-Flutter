@@ -22,6 +22,16 @@ class _PhishingScreenState extends ConsumerState<PhishingScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant PhishingScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mailboxId != widget.mailboxId) {
+      Future.microtask(() {
+        ref.read(messagesProvider.notifier).fetchPhishing(widget.mailboxId, refresh: true);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(messagesProvider);
     final messages = state.phishingMessages;

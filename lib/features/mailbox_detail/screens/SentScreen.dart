@@ -20,6 +20,16 @@ class _SentScreenState extends ConsumerState<SentScreen> {
   }
 
   @override
+  void didUpdateWidget(covariant SentScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.mailboxId != widget.mailboxId) {
+      Future.microtask(() {
+        ref.read(messagesProvider.notifier).fetchSent(widget.mailboxId, refresh: true);
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(messagesProvider);
     final messages = state.sentMessages;

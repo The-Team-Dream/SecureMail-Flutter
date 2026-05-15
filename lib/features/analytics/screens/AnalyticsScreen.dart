@@ -6,13 +6,25 @@ import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:intl/intl.dart';
 import '../providers/analytics_provider.dart';
 import '../models/analytics_model.dart';
+import '../../alerts/providers/alerts_provider.dart';
+import '../../alerts/models/alert_model.dart';
 
 class Analyticsscreen extends ConsumerWidget {
   const Analyticsscreen({super.key});
+
+  String _formatStorage(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final overviewAsync = ref.watch(analyticsOverviewProvider);
     final activityAsync = ref.watch(analyticsActivityProvider('weekly'));
+    final alertsState = ref.watch(alertsProvider);
 
     return Scaffold(
       backgroundColor: context.bgColor,
@@ -24,6 +36,7 @@ class Analyticsscreen extends ConsumerWidget {
           onRefresh: () async {
             ref.invalidate(analyticsOverviewProvider);
             ref.invalidate(analyticsActivityProvider('weekly'));
+            ref.read(alertsProvider.notifier).fetchAlerts();
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -39,26 +52,39 @@ class Analyticsscreen extends ConsumerWidget {
                   title: 'TOTAL THREATS BLOCKED',
                   value: NumberFormat('#,###').format(
                       overview.totalPhishingDetected +
-                          overview.totalSpamDetected),
-                  change: '+12%',
+                          overview.totalSpamDetected +
+                          overview.totalMalwareDetected),
+                  change: overview.threatsChange,
                   subtitle: 'Comparison vs previous 30 days',
                   icon: Icons.shield_outlined,
-                  isPositive: true,
+                  isPositive: overview.threatsChange.startsWith('+'),
                 ),
                 const SizedBox(height: AppSpacing.x3),
                 _buildMetricCard(
                   context: context,
                   title: 'CRITICAL ALERTS',
-                  value: overview.totalPhishingDetected.toString(),
-                  change: '-5%',
+                  value: (overview.totalPhishingDetected +
+                          overview.totalMalwareDetected)
+                      .toString(),
+                  change: overview.phishingChange,
                   subtitle: 'Active incidents requiring attention',
                   icon: Icons.warning_amber_rounded,
-                  isPositive: true,
+                  isPositive: overview.phishingChange.startsWith('+'),
                   iconColor: Colors.redAccent,
                 ),
                 const SizedBox(height: AppSpacing.x3),
+                _buildMetricCard(
+                  context: context,
+                  title: 'STORAGE UTILIZATION',
+                  value: _formatStorage(overview.totalStorageUsed),
+                  change: 'Stable',
+                  subtitle: 'Total storage consumed by attachments',
+                  icon: Icons.cloud_outlined,
+                  isPositive: false,
+                  iconColor: context.button1,
+                ),
+                const SizedBox(height: AppSpacing.x3),
                 _buildHealthCard(context, overview),
-
                 const SizedBox(height: AppSpacing.x8),
                 activityAsync.when(
                   loading: () =>
@@ -67,32 +93,22 @@ class Analyticsscreen extends ConsumerWidget {
                   data: (activity) =>
                       _buildWeeklyDistribution(context, activity),
                 ),
-
                 const SizedBox(height: AppSpacing.x8),
                 _buildRecentEventsHeader(context),
                 const SizedBox(height: AppSpacing.x3),
-                // إعادة استخدام الموديلات الأصلية لضمان عدم تغيير منطق الواجهة
-                _buildEventItem(
-                    context,
-                    SecurityEvent(
-                      title: 'Suspicious Login',
-                      description: 'New IP detected in USA',
-                      severity: EventSeverity.high,
-                      icon: Icons.security,
-                      timestamp:
-                          DateTime.now().subtract(const Duration(minutes: 5)),
-                    )),
-                _buildEventItem(
-                    context,
-                    SecurityEvent(
-                      title: 'Mailbox Sync',
-                      description: 'Successfully synced 42 emails',
-                      severity: EventSeverity.info,
-                      icon: Icons.sync,
-                      timestamp:
-                          DateTime.now().subtract(const Duration(minutes: 15)),
-                    )),
-
+                if (alertsState.notifications.isEmpty && !alertsState.isLoading)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Center(
+                      child: Text('No recent security events',
+                          style: AppTextStyles.bodyS
+                              .copyWith(color: context.text3)),
+                    ),
+                  )
+                else
+                  ...alertsState.notifications.take(5).map(
+                        (n) => _buildEventItem(context, n),
+                      ),
                 const SizedBox(height: AppSpacing.x8),
               ],
             ),
@@ -206,7 +222,9 @@ class Analyticsscreen extends ConsumerWidget {
   Widget _buildHealthCard(BuildContext context, AnalyticsOverviewModel data) {
     // حساب تقريبي لصحة النظام بناءً على نسبة الإيميلات السليمة
     final total = data.totalEmails > 0 ? data.totalEmails : 1;
-    final threats = data.totalPhishingDetected + data.totalSpamDetected;
+    final threats = data.totalPhishingDetected +
+        data.totalSpamDetected +
+        data.totalMalwareDetected;
     final healthScore =
         (((total - threats) / total) * 100).toInt().clamp(0, 100);
     final status = healthScore > 90
@@ -399,16 +417,19 @@ class Analyticsscreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildEventItem(BuildContext context, SecurityEvent event) {
+  Widget _buildEventItem(BuildContext context, AlertNotification event) {
     final Color severityColor;
     switch (event.severity) {
-      case EventSeverity.high:
+      case AlertSeverity.critical:
         severityColor = Colors.redAccent;
         break;
-      case EventSeverity.medium:
+      case AlertSeverity.high:
         severityColor = Colors.orangeAccent;
         break;
-      case EventSeverity.info:
+      case AlertSeverity.medium:
+        severityColor = Colors.amber;
+        break;
+      case AlertSeverity.info:
         severityColor = Colors.greenAccent;
         break;
       default:
@@ -469,7 +490,7 @@ class Analyticsscreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${DateFormat.jm().format(event.timestamp)} ago',
+                  '${DateFormat.jm().format(event.timestamp)}',
                   style: AppTextStyles.labelS.copyWith(
                       color: context.text3.withOpacity(0.7), fontSize: 10),
                 ),
@@ -480,24 +501,4 @@ class Analyticsscreen extends ConsumerWidget {
       ),
     );
   }
-}
-
-// ── Models مفقودة لإصلاح الخطأ ─────────────────────────────
-
-enum EventSeverity { high, medium, info }
-
-class SecurityEvent {
-  final String title;
-  final String description;
-  final EventSeverity severity;
-  final IconData icon;
-  final DateTime timestamp;
-
-  SecurityEvent({
-    required this.title,
-    required this.description,
-    required this.severity,
-    required this.icon,
-    required this.timestamp,
-  });
 }

@@ -55,6 +55,7 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     final state = ref.watch(mailboxesProvider);
     final mailboxes = state.mailboxes
@@ -134,136 +135,142 @@ class _MailboxesScreenState extends ConsumerState<MailboxesScreen> {
 
             // Content
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.screenHorizontal,
-                  vertical: AppSpacing.x3,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Overview Card
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.x5),
-                      decoration: BoxDecoration(
-                        color: context.card1,
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
-                        border: Border.all(color: context.fieldBorder),
+              child: RefreshIndicator(
+                onRefresh: () => ref.read(mailboxesProvider.notifier).fetchMailboxes(),
+                color: context.button1,
+                backgroundColor: context.card1,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.screenHorizontal,
+                    vertical: AppSpacing.x3,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Overview Card
+                      Container(
+                        padding: const EdgeInsets.all(AppSpacing.x5),
+                        decoration: BoxDecoration(
+                          color: context.card1,
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
+                          border: Border.all(color: context.fieldBorder),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('OVERVIEW',
+                                      style: AppTextStyles.labelS.copyWith(
+                                        color: context.button1,
+                                        letterSpacing: 1.5,
+                                      )),
+                                  const SizedBox(height: AppSpacing.x1 + 2),
+                                  Text(
+                                    '${state.activeCount} Active\nNodes',
+                                    style: AppTextStyles.displayM.copyWith(
+                                      color: context.text1,
+                                      height: 1.1,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppSpacing.x2),
+                                  Text(
+                                    'All systems operational',
+                                    style: AppTextStyles.bodyS.copyWith(
+                                      color: context.text3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => const Step1ProviderScreen(),
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: context.button1,
+                                minimumSize: Size.zero,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: AppSpacing.x4,
+                                  vertical: AppSpacing.x2,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.sm),
+                                ),
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: Text('Add Mailbox',
+                                  style: AppTextStyles.labelS.copyWith(
+                                    color: Colors.white,
+                                  )),
+                            ),
+                          ],
+                        ),
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
+                      const SizedBox(height: AppSpacing.x8),
+
+                      // Mailboxes List
+                      if (mailboxes.isNotEmpty) ...[
+                        Text(
+                          'CONNECTED MAILBOXES',
+                          style: AppTextStyles.labelS.copyWith(
+                            color: context.text3,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.x3),
+                        ...mailboxes.map((m) {
+                          final syncing = state.isSyncing(m.id);
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: AppSpacing.x2),
+                            child: _MailboxCard(
+                              mailbox: m,
+                              isSyncing: syncing,
+                              onTap: (syncing && m.lastSyncedAt == null)
+                                  ? () => ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('First time sync, please wait...'),
+                                          duration: Duration(seconds: 2),
+                                        ),
+                                      )
+                                  : () => context.go(AppRoutes.inbox(m.id)),
+                              onRemove: () => ref
+                                  .read(mailboxesProvider.notifier)
+                                  .removeMailbox(m.id),
+                              onRetry: () => ref
+                                  .read(mailboxesProvider.notifier)
+                                  .retrySync(m.id),
+                            ),
+                          );
+                        }),
+                      ] else ...[
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: AppSpacing.x16),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('OVERVIEW',
-                                    style: AppTextStyles.labelS.copyWith(
-                                      color: context.button1,
-                                      letterSpacing: 1.5,
+                                Icon(Icons.mail_outline,
+                                    size: AppSize.avatarLg,
+                                    color: context.text3.withOpacity(0.5)),
+                                const SizedBox(height: AppSpacing.x4),
+                                Text('No mailboxes connected',
+                                    style: AppTextStyles.bodyM.copyWith(
+                                      color: context.text3,
                                     )),
-                                const SizedBox(height: AppSpacing.x1 + 2),
-                                Text(
-                                  '${state.activeCount} Active\nNodes',
-                                  style: AppTextStyles.displayM.copyWith(
-                                    color: context.text1,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                const SizedBox(height: AppSpacing.x2),
-                                Text(
-                                  'All systems operational',
-                                  style: AppTextStyles.bodyS.copyWith(
-                                    color: context.text3,
-                                  ),
-                                ),
                               ],
                             ),
                           ),
-                          ElevatedButton(
-                            onPressed: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const Step1ProviderScreen(),
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: context.button1,
-                              minimumSize: Size.zero,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppSpacing.x4,
-                                vertical: AppSpacing.x2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(AppRadius.sm),
-                              ),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: Text('Add Mailbox',
-                                style: AppTextStyles.labelS.copyWith(
-                                  color: Colors.white,
-                                )),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.x8),
-
-                    // Mailboxes List
-                    if (mailboxes.isNotEmpty) ...[
-                      Text(
-                        'CONNECTED MAILBOXES',
-                        style: AppTextStyles.labelS.copyWith(
-                          color: context.text3,
-                          letterSpacing: 1.5,
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.x3),
-                      ...mailboxes.map((m) {
-                        final syncing = state.isSyncing(m.id);
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: AppSpacing.x2),
-                          child: _MailboxCard(
-                            mailbox: m,
-                            isSyncing: syncing,
-                            onTap: (syncing && m.lastSyncedAt == null)
-                                ? () => ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('First time sync, please wait...'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    )
-                                : () => context.go(AppRoutes.inbox(m.id)),
-                            onRemove: () => ref
-                                .read(mailboxesProvider.notifier)
-                                .removeMailbox(m.id),
-                            onRetry: () => ref
-                                .read(mailboxesProvider.notifier)
-                                .retrySync(m.id),
-                          ),
-                        );
-                      }),
-                    ] else ...[
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.x16),
-                          child: Column(
-                            children: [
-                              Icon(Icons.mail_outline,
-                                  size: AppSize.avatarLg,
-                                  color: context.text3.withOpacity(0.5)),
-                              const SizedBox(height: AppSpacing.x4),
-                              Text('No mailboxes connected',
-                                  style: AppTextStyles.bodyM.copyWith(
-                                    color: context.text3,
-                                  )),
-                            ],
-                          ),
-                        ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -330,9 +337,18 @@ class _MailboxCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    mailbox.email,
+                    mailbox.displayName.isNotEmpty ? mailbox.displayName : 'My Mailbox',
                     style: AppTextStyles.labelM.copyWith(
                       color: context.text1,
+                      fontWeight: FontWeight.w700,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    mailbox.email,
+                    style: AppTextStyles.caption.copyWith(
+                      color: context.text3,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

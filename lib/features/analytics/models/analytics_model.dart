@@ -3,14 +3,20 @@ class AnalyticsOverviewModel {
   final int totalEmails;
   final int totalPhishingDetected;
   final int totalSpamDetected;
+  final int totalMalwareDetected;
   final int totalStorageUsed;
+  final String threatsChange;
+  final String phishingChange;
 
   AnalyticsOverviewModel({
     required this.totalMailboxesConnected,
     required this.totalEmails,
     required this.totalPhishingDetected,
     required this.totalSpamDetected,
+    required this.totalMalwareDetected,
     required this.totalStorageUsed,
+    required this.threatsChange,
+    required this.phishingChange,
   });
 
   factory AnalyticsOverviewModel.fromJson(Map<String, dynamic> json) {
@@ -19,7 +25,10 @@ class AnalyticsOverviewModel {
       totalEmails:             json['totalEmails'] as int? ?? 0,
       totalPhishingDetected:   json['totalPhishingDetected'] as int? ?? 0,
       totalSpamDetected:       json['totalSpamDetected'] as int? ?? 0,
+      totalMalwareDetected:    json['totalMalwareDetected'] as int? ?? 0,
       totalStorageUsed:        json['totalStorageUsed'] as int? ?? 0,
+      threatsChange:           json['threatsChange'] as String? ?? '0%',
+      phishingChange:          json['phishingChange'] as String? ?? '0%',
     );
   }
 }

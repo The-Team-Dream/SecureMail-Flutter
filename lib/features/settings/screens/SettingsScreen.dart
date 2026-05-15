@@ -9,6 +9,9 @@ import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/theme_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../providers/sessions_provider.dart';
+import 'package:securemail/features/profile/providers/profile_provider.dart';
+import 'package:securemail/core/services/cache_service.dart';
 
 class Settingsscreen extends ConsumerStatefulWidget {
   const Settingsscreen({super.key});
@@ -48,7 +51,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                 _buildNavItem(
                   icon: Icons.manage_accounts_outlined,
                   title: 'Edit Profile',
-                  subtitle: 'Update your name and profile photo',
+                  subtitle: ref.watch(profileProvider).profile?.username ?? 'Update your name and photo',
                   onTap: () {
                     context.push(AppRoutes.editProfile);
                   },
@@ -83,7 +86,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                 _buildNavItem(
                   icon: Icons.key_outlined,
                   title: 'Change Password',
-                  subtitle: 'Last changed 3 months ago',
+                  subtitle: 'Update your security credentials',
                   onTap: () {
                     context.push(AppRoutes.changePassword);
                   },
@@ -100,7 +103,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                 _buildNavItem(
                   icon: Icons.devices_outlined,
                   title: 'Logged in Devices',
-                  subtitle: '3 active sessions detected',
+                  subtitle: '${ref.watch(sessionsProvider).sessions.length} active sessions detected',
                   onTap: () {
                     context.push(AppRoutes.loggedInDevices);
                   },
@@ -117,7 +120,7 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                 _buildNavItem(
                   icon: Icons.notifications_outlined,
                   title: 'Notifications',
-                  subtitle: 'Push, Email, and Security alerts',
+                  subtitle: 'Push and Security alerts',
                   onTap: () {
                     context.push(AppRoutes.notificationsSettings);
                   },
@@ -126,16 +129,9 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                 _buildNavItem(
                   icon: Icons.security_outlined,
                   title: 'Privacy & Security',
-                  subtitle: 'Encryption keys, Biometrics',
-                  onTap: () async {
-                    const url =
-                        'https://www.youtube.com/watch?v=WlJUG-6UsQI&list=RD-jlaaizKuCA&index=2';
-                    if (await canLaunchUrl(Uri.parse(url))) {
-                      await launchUrl(
-                        Uri.parse(url),
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
+                  subtitle: 'Encryption and Biometrics',
+                  onTap: () {
+                    context.push(AppRoutes.privacySecurity);
                   },
                 ),
               ],
@@ -286,6 +282,8 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
 
   // ── Clear Cache Card ──────────────────────────────────────
   Widget _buildClearCacheCard() {
+    final cacheSize = ref.watch(cacheSizeProvider);
+
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.x4,
@@ -318,13 +316,20 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                         color: const Color(0xFFE24B4A),
                         fontWeight: FontWeight.w500)),
                 const SizedBox(height: 2),
-                Text('124 MB of temporary data',
+                Text('${cacheSize.toStringAsFixed(1)} MB of temporary data',
                     style: AppTextStyles.bodyS.copyWith(color: context.text3)),
               ],
             ),
           ),
           OutlinedButton(
-            onPressed: () {},
+            onPressed: () async {
+              await ref.read(cacheSizeProvider.notifier).clear();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Cache cleared successfully')),
+                );
+              }
+            },
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFE24B4A),
               side: const BorderSide(color: Color(0xFFE24B4A)),
@@ -332,8 +337,8 @@ class _SettingsscreenState extends ConsumerState<Settingsscreen> {
                   borderRadius: BorderRadius.circular(20)),
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.x4, vertical: AppSpacing.x2),
-              minimumSize: Size.zero, // ← أضف السطر ده
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap, // ←
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
             child: Text('Clear',
                 style: AppTextStyles.labelS

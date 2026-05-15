@@ -222,5 +222,8 @@ class ProfileNotifier extends StateNotifier<ProfileState> {
 
 final profileProvider = StateNotifierProvider<ProfileNotifier, ProfileState>(
 
-  (ref) => ProfileNotifier(ref),
+  (ref) {
+    ref.watch(authProvider.select((s) => s.isAuthenticated));
+    return ProfileNotifier(ref);
+  },
 );

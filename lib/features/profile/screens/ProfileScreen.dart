@@ -302,7 +302,9 @@ class Profilescreen extends ConsumerWidget {
 
                 // نؤجّل التنقل للـ microtask التالي حتى ينتهي الـ Dialog
                 // من إغلاق نفسه أولاً قبل إعادة تعيين الـ Stack
-                Future.microtask(() => appRouter.go(AppRoutes.login));
+                if (context.mounted) {
+                  context.go(AppRoutes.login);
+                }
               },
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFFE24B4A),

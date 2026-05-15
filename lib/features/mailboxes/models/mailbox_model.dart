@@ -15,11 +15,15 @@ class MailboxModel {
   final String createdAt;
   final bool hasCredentials;
   final int emailCount;
+  final int storageUsed;
+  final int storageLimit;
 
   // ── Getters للواجهة ─────────────────────────────────────
   String get email => emailAddress;
   double get syncProgress => 1.0;
   DateTime? get lastSyncAt => lastSyncedAt != null ? DateTime.tryParse(lastSyncedAt!) : null;
+
+  double get storagePercent => storageLimit > 0 ? (storageUsed / storageLimit) : 0.0;
 
   MailboxSyncStatus get syncStatus => MailboxSyncStatus.synced;
 
@@ -48,6 +52,8 @@ class MailboxModel {
     required this.createdAt,
     required this.hasCredentials,
     required this.emailCount,
+    this.storageUsed = 0,
+    this.storageLimit = 0,
   });
 
   factory MailboxModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +68,8 @@ class MailboxModel {
       createdAt:                json['createdAt'] as String? ?? '',
       hasCredentials:           json['hasCredentials'] as bool? ?? false,
       emailCount:               json['emailCount'] as int? ?? 0,
+      storageUsed:              json['storageUsed'] as int? ?? 0,
+      storageLimit:             json['storageLimit'] as int? ?? 0,
     );
   }
 }

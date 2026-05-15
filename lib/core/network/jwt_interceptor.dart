@@ -28,7 +28,8 @@ class JwtInterceptor extends Interceptor {
       options.headers[ApiConstants.headerAuthorization] =
           '${ApiConstants.bearerPrefix}$token';
     } else {
-      debugPrint('[JwtInterceptor] No token found in storage for ${options.path}');
+      debugPrint(
+          '[JwtInterceptor] No token found in storage for ${options.path}');
     }
 
     handler.next(options);

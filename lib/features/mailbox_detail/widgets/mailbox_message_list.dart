@@ -124,7 +124,7 @@ class _MessageTile extends StatelessWidget {
       ),
       onLongPress: folderName == 'Sent' ? null : () => _showReclassifySheet(context),
       child: Container(
-        height: showRiskBadge ? 114 : 88,
+        height: (showRiskBadge ? 114 : 88) + (message.hasAttachments ? 30 : 0),
         color: message.isActive ? context.card1 : Colors.transparent,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -198,6 +198,10 @@ class _MessageTile extends StatelessWidget {
                               height: 1.15,
                             ),
                           ),
+                          if (message.hasAttachments) ...[
+                            const SizedBox(height: 8),
+                            _AttachmentIndicator(name: message.attachmentNames.first),
+                          ],
                           if (showRiskBadge) ...[
                             const Spacer(),
                             Row(
@@ -284,6 +288,41 @@ class _Avatar extends StatelessWidget {
           fontSize: 16,
           height: 1,
         ),
+      ),
+    );
+  }
+}
+
+class _AttachmentIndicator extends StatelessWidget {
+  const _AttachmentIndicator({required this.name});
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: context.fieldBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: context.button1.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.attachment_rounded, size: 14, color: context.text2),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.labelS.copyWith(
+                color: context.text1,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -12,7 +12,7 @@ class AnalyticsRepository implements IAnalyticsRepository {
   @override
   Future<AnalyticsOverviewModel> getOverview() async {
     final response = await ApiClient.get(ApiConstants.analyticsOverview);
-    return AnalyticsOverviewModel.fromJson(response.data);
+    return AnalyticsOverviewModel.fromJson(response.data['data']);
   }
 
   @override
@@ -21,7 +21,8 @@ class AnalyticsRepository implements IAnalyticsRepository {
       ApiConstants.analyticsActivity,
       queryParameters: {'period': period},
     );
-    final List<dynamic> data = response.data['data'];
+    final dynamic responseData = response.data['data'];
+    final List<dynamic> data = responseData is List ? responseData : responseData['data'];
     return data.map((p) => ActivityDataPoint.fromJson(p)).toList();
   }
 }

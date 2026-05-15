@@ -8,6 +8,12 @@ import 'package:securemail/core/network/api_client.dart';
 import 'package:securemail/core/network/socket_service.dart';
 import 'package:dio/dio.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
+import 'package:securemail/features/mailbox_detail/providers/messages_provider.dart';
+import 'package:securemail/features/alerts/providers/alerts_provider.dart';
+import 'package:securemail/features/analytics/providers/analytics_provider.dart';
+import 'package:securemail/features/mailboxes/providers/security_report_provider.dart';
+import 'package:securemail/features/profile/providers/profile_provider.dart';
 
 // ── State ──────────────────────────────────────────────────
 
@@ -68,7 +74,8 @@ class AuthState {
 // ── Notifier ───────────────────────────────────────────────
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState());
+  final Ref _ref;
+  AuthNotifier(this._ref) : super(const AuthState());
 
   final _storage = const FlutterSecureStorage();
   final GoogleSignIn _googleSignIn = GoogleSignIn(
@@ -125,10 +132,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         accessToken: token,
         requires2FA: false,
       );
-      
+
       // Init Socket
       socketService.init(token);
-      
+
       return true;
     } on DioException catch (e) {
       state = state.copyWith(
@@ -169,7 +176,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       debugPrint('[AuthNotifier] Saving Google token to storage...');
       await _storage.write(key: AppConstants.secureAccessToken, value: token);
       debugPrint('[AuthNotifier] Google token saved successfully');
-      
+
       state = state.copyWith(
         isLoading: false,
         isAuthenticated: true,
@@ -359,6 +366,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       await _storage.deleteAll();
       socketService.disconnect();
+      ApiClient.reset(); // Force Dio recreation
+
+      // ── Invalidate all data providers to clear cache for the next user ──
+      _ref.invalidate(mailboxesProvider);
+      _ref.invalidate(messagesProvider);
+      _ref.invalidate(alertsProvider);
+      _ref.invalidate(unreadCountProvider);
+      _ref.invalidate(analyticsOverviewProvider);
+      _ref.invalidate(analyticsActivityProvider('daily'));
+      _ref.invalidate(analyticsActivityProvider('weekly'));
+      _ref.invalidate(analyticsActivityProvider('monthly'));
+      _ref.invalidate(securityReportsProvider);
+
       state = const AuthState();
     }
   }
@@ -403,5 +423,5 @@ class AuthNotifier extends StateNotifier<AuthState> {
 // ── Provider ───────────────────────────────────────────────
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(),
+  (ref) => AuthNotifier(ref),
 );

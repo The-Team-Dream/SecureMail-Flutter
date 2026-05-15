@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/core/network/api_client.dart';
 import 'package:securemail/core/constants/ApiConstants.dart';
+import 'package:securemail/features/auth/providers/auth_provider.dart';
 import 'package:securemail/features/mailbox_detail/models/email_model.dart';
 import 'package:securemail/features/mailbox_detail/models/paginated_emails_model.dart';
 import 'package:dio/dio.dart';
@@ -12,6 +13,7 @@ import 'package:securemail/core/network/socket_service.dart';
 
 class MessagesState {
   const MessagesState({
+    this.currentMailboxId,
     this.isLoading = false,
     this.isFetchingMore = false,
     this.error,
@@ -22,11 +24,14 @@ class MessagesState {
     this.phishing = const [],
     this.trash = const [],
     this.searchResult = const [],
+    this.reports = const [],
+    this.securityStats = const {'critical': 0, 'resolved': 0, 'pending': 0},
     this.selectedEmail,
     this.currentPage = 1,
     this.hasMore = true,
   });
 
+  final int? currentMailboxId;
   final bool isLoading;
   final bool isFetchingMore;
   final String? error;
@@ -37,6 +42,8 @@ class MessagesState {
   final List<EmailModel> phishing;
   final List<EmailModel> trash;
   final List<EmailModel> searchResult;
+  final List<dynamic> reports;
+  final Map<String, int> securityStats;
   final EmailModel? selectedEmail;
   final int currentPage;
   final bool hasMore;
@@ -51,6 +58,7 @@ class MessagesState {
   List<MailboxMessage> get trashMessages => trash.map((e) => e.toMailboxMessage()).toList();
 
   MessagesState copyWith({
+    int? currentMailboxId,
     bool? isLoading,
     bool? isFetchingMore,
     String? error,
@@ -61,6 +69,8 @@ class MessagesState {
     List<EmailModel>? phishing,
     List<EmailModel>? trash,
     List<EmailModel>? searchResult,
+    List<dynamic>? reports,
+    Map<String, int>? securityStats,
     EmailModel? selectedEmail,
     int? currentPage,
     bool? hasMore,
@@ -68,6 +78,7 @@ class MessagesState {
     bool clearSelected = false,
   }) {
     return MessagesState(
+      currentMailboxId: currentMailboxId ?? this.currentMailboxId,
       isLoading:      isLoading      ?? this.isLoading,
       isFetchingMore: isFetchingMore ?? this.isFetchingMore,
       error:          clearError     ? null : error ?? this.error,
@@ -78,6 +89,8 @@ class MessagesState {
       phishing:       phishing       ?? this.phishing,
       trash:          trash          ?? this.trash,
       searchResult:   searchResult   ?? this.searchResult,
+      reports:        reports        ?? this.reports,
+      securityStats:  securityStats  ?? this.securityStats,
       selectedEmail:  clearSelected  ? null : selectedEmail ?? this.selectedEmail,
       currentPage:    currentPage    ?? this.currentPage,
       hasMore:        hasMore        ?? this.hasMore,
@@ -97,9 +110,19 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     // Sync completion is now handled in the Screen UI layer.
   }
 
+  void _checkMailboxChange(int mailboxId) {
+    if (state.currentMailboxId != null && state.currentMailboxId != mailboxId) {
+      state = MessagesState(currentMailboxId: mailboxId);
+    } else if (state.currentMailboxId == null) {
+      state = state.copyWith(currentMailboxId: mailboxId);
+    }
+  }
+
   // ── Fetch Inbox (Supports Pagination) ─────────────────────
 
   Future<void> fetchInbox(int mailboxId, {bool refresh = false, bool silent = false}) async {
+    _checkMailboxChange(mailboxId);
+    if (state.inbox.isEmpty) refresh = true; // Force refresh if we just cleared state
     if (refresh) {
       if (!silent) {
         state = state.copyWith(isLoading: true, clearError: true);
@@ -150,6 +173,7 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
   // ── Fetch Other Folders (Simple version for now) ──────────
 
   Future<void> fetchSent(int mailboxId, {bool refresh = false}) async {
+    _checkMailboxChange(mailboxId);
     if (refresh) {
       try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
     }
@@ -161,6 +185,7 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
   }
 
   Future<void> fetchSpam(int mailboxId, {bool refresh = false}) async {
+    _checkMailboxChange(mailboxId);
     if (refresh) {
       try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
     }
@@ -172,6 +197,7 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
   }
 
   Future<void> fetchPhishing(int mailboxId, {bool refresh = false}) async {
+    _checkMailboxChange(mailboxId);
     if (refresh) {
       try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
     }
@@ -183,6 +209,7 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
   }
 
   Future<void> fetchMalware(int mailboxId, {bool refresh = false}) async {
+    _checkMailboxChange(mailboxId);
     if (refresh) {
       try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
     }
@@ -194,6 +221,7 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
   }
 
   Future<void> fetchTrash(int mailboxId, {bool refresh = false}) async {
+    _checkMailboxChange(mailboxId);
     if (refresh) {
       try { ApiClient.post(ApiConstants.syncMailbox(mailboxId)); } catch (_) {}
     }
@@ -204,7 +232,28 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
     } catch (_) {}
   }
 
+  Future<void> fetchReports(int mailboxId) async {
+    _checkMailboxChange(mailboxId);
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final response = await ApiClient.get(ApiConstants.mailboxReports(mailboxId));
+      
+      final List<dynamic> reportsData = response.data['data'];
+      final Map<String, dynamic> meta = response.data['meta'];
+      final Map<String, int> stats = Map<String, int>.from(meta['stats']);
+
+      state = state.copyWith(
+        isLoading: false,
+        reports: reportsData,
+        securityStats: stats,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
   Future<void> search(int mailboxId, String query) async {
+    _checkMailboxChange(mailboxId);
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final response = await ApiClient.get(
@@ -357,5 +406,6 @@ class MessagesNotifier extends StateNotifier<MessagesState> {
 // ── Provider ───────────────────────────────────────────────
 
 final messagesProvider = StateNotifierProvider<MessagesNotifier, MessagesState>((ref) {
+  ref.watch(authProvider.select((s) => s.isAuthenticated));
   return MessagesNotifier();
 });

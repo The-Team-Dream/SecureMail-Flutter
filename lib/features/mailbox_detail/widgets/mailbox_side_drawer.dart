@@ -1,10 +1,14 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
+import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
+import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 
-class MailboxSideDrawer extends StatelessWidget {
+class MailboxSideDrawer extends ConsumerWidget {
   const MailboxSideDrawer({
     super.key,
     required this.activeRoute,
@@ -19,8 +23,12 @@ class MailboxSideDrawer extends StatelessWidget {
   final int? unreadCount;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
+    final mailboxes = ref.watch(mailboxesProvider).mailboxes;
+    final currentMailbox = mailboxes.isEmpty 
+        ? null 
+        : mailboxes.firstWhere((m) => m.id == mailboxId, orElse: () => mailboxes.first);
 
     return Drawer(
       width: width < 380 ? width * 0.88 : 320,
@@ -34,7 +42,9 @@ class MailboxSideDrawer extends StatelessWidget {
             children: [
               _Header(
                 onClose: () => Navigator.of(context).pop(),
-                mailboxEmail: mailboxEmail,
+                currentMailbox: currentMailbox,
+                mailboxes: mailboxes,
+                fallbackEmail: mailboxEmail.isNotEmpty ? mailboxEmail : 'My Mailbox',
               ),
               const SizedBox(height: 28),
               Expanded(
@@ -100,7 +110,8 @@ class MailboxSideDrawer extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              const _StorageCard(),
+              if (currentMailbox != null)
+                _StorageCard(mailbox: currentMailbox),
             ],
           ),
         ),
@@ -112,11 +123,15 @@ class MailboxSideDrawer extends StatelessWidget {
 class _Header extends StatelessWidget {
   const _Header({
     required this.onClose,
-    required this.mailboxEmail,
+    required this.currentMailbox,
+    required this.mailboxes,
+    required this.fallbackEmail,
   });
 
   final VoidCallback onClose;
-  final String mailboxEmail;
+  final MailboxModel? currentMailbox;
+  final List<MailboxModel> mailboxes;
+  final String fallbackEmail;
 
   @override
   Widget build(BuildContext context) {
@@ -149,20 +164,77 @@ class _Header extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                mailboxEmail.isNotEmpty ? mailboxEmail : 'My Mailbox',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTextStyles.bodyL.copyWith(
-                  color: context.text1,
-                  fontWeight: FontWeight.w700,
-                  height: 1.1,
+          child: PopupMenuButton<MailboxModel>(
+            offset: const Offset(0, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: context.card1,
+            initialValue: currentMailbox,
+            onSelected: (mailbox) {
+              if (currentMailbox?.id != mailbox.id) {
+                onClose();
+                context.go(AppRoutes.inbox(mailbox.id));
+              }
+            },
+            itemBuilder: (context) {
+              return mailboxes.map((m) {
+                return PopupMenuItem<MailboxModel>(
+                  value: m,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        m.displayName.isNotEmpty ? m.displayName : 'My Mailbox',
+                        style: AppTextStyles.bodyM.copyWith(
+                          color: context.text1,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        m.emailAddress,
+                        style: AppTextStyles.labelS.copyWith(
+                          color: context.text3,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList();
+            },
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currentMailbox?.displayName.isNotEmpty == true 
+                            ? currentMailbox!.displayName 
+                            : fallbackEmail,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.bodyL.copyWith(
+                          color: context.text1,
+                          fontWeight: FontWeight.w700,
+                          height: 1.1,
+                        ),
+                      ),
+                      if (currentMailbox != null)
+                        Text(
+                          currentMailbox!.emailAddress,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.labelS.copyWith(
+                            color: context.text3,
+                            height: 1.2,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Icon(Icons.arrow_drop_down_rounded, color: context.text3),
+              ],
+            ),
           ),
         ),
         IconButton(
@@ -298,10 +370,24 @@ class _DrawerItem extends StatelessWidget {
 }
 
 class _StorageCard extends StatelessWidget {
-  const _StorageCard();
+  const _StorageCard({required this.mailbox});
+
+  final MailboxModel mailbox;
+
+  String _formatBytes(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    var i = (bytes.toDouble().isFinite && bytes > 0) 
+        ? (math.log(bytes) / math.log(1024)).floor() 
+        : 0;
+    return "${(bytes / math.pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}";
+  }
 
   @override
   Widget build(BuildContext context) {
+    final percent = mailbox.storagePercent;
+    final percentLabel = "${(percent * 100).toInt()}%";
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -326,7 +412,7 @@ class _StorageCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '75%',
+                percentLabel,
                 style: AppTextStyles.labelS.copyWith(
                   color: context.button1,
                   fontWeight: FontWeight.w800,
@@ -339,7 +425,7 @@ class _StorageCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               minHeight: 5,
-              value: 0.75,
+              value: percent,
               backgroundColor: context.button1.withValues(alpha: 0.2),
               valueColor: AlwaysStoppedAnimation<Color>(
                 context.button1,
@@ -348,7 +434,7 @@ class _StorageCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '15.0 GB / 20.0 GB USED',
+            '${_formatBytes(mailbox.storageUsed)} / ${_formatBytes(mailbox.storageLimit)} USED',
             style: AppTextStyles.caption.copyWith(
               color: context.text3,
               fontSize: 10,

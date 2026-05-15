@@ -13,6 +13,8 @@ class MailboxMessage {
     required this.badgeColor,
     this.avatarColor = const Color(0xFF0B2B23),
     this.isActive = false,
+    this.hasAttachments = false,
+    this.attachmentNames = const [],
   });
 
   final String id;
@@ -26,6 +28,8 @@ class MailboxMessage {
   final Color badgeColor;
   final Color avatarColor;
   final bool isActive;
+  final bool hasAttachments;
+  final List<String> attachmentNames;
 }
 
 class MailboxMockMessages {
