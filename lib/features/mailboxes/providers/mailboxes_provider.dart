@@ -96,7 +96,7 @@ class MailboxesNotifier extends StateNotifier<MailboxesState> {
         'port': data.imapPort,
         'email': data.email,
         'password': data.imapPassword,
-        'secure': true, // Defaulting to secure for simplicity
+        'secure': data.imapEncryption != EncryptionMode.none,
         'displayName': data.displayName ?? data.email,
         'smtpHost': data.smtpHost,
         'smtpPort': data.smtpPort,
@@ -228,6 +228,42 @@ class MailboxesNotifier extends StateNotifier<MailboxesState> {
     } catch (_) {
       state = state.copyWith(
           isLoading: false, error: 'An unexpected error occurred.');
+      return false;
+    }
+  }
+
+  // ── Update Mailbox Settings ───────────────────────────────
+  /// PATCH /mailboxes/:id
+  Future<bool> updateMailboxSettings(
+    int mailboxId, {
+    String? displayName,
+    bool? pushNotificationsEnabled,
+  }) async {
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final payload = {
+        if (displayName != null) 'displayName': displayName,
+        if (pushNotificationsEnabled != null)
+          'pushNotificationsEnabled': pushNotificationsEnabled,
+      };
+
+      await ApiClient.patch(
+        ApiConstants.mailboxById(mailboxId),
+        data: payload,
+      );
+      await fetchMailboxes();
+      return true;
+    } on DioException catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _extractError(e, 'Failed to update mailbox settings.'),
+      );
+      return false;
+    } catch (_) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'An unexpected error occurred.',
+      );
       return false;
     }
   }
@@ -364,6 +400,10 @@ class AddMailboxFormNotifier extends StateNotifier<AddMailboxFormData> {
     required int imapPort,
     required String imapPassword,
     required EncryptionMode imapEncryption,
+    required String smtpHost,
+    required int smtpPort,
+    required EncryptionMode smtpEncryption,
+    String? smtpPassword,
   }) {
     state = state.copyWith(
       email: email,
@@ -371,9 +411,26 @@ class AddMailboxFormNotifier extends StateNotifier<AddMailboxFormData> {
       imapPort: imapPort,
       imapPassword: imapPassword,
       imapEncryption: imapEncryption,
+      smtpHost: smtpHost,
+      smtpPort: smtpPort,
+      smtpEncryption: smtpEncryption,
+      smtpPassword: smtpPassword ?? imapPassword,
     );
   }
 
+  void updateStep3Advanced({
+    required String syncFrequency,
+    required int fetchLimit,
+    required bool securityScanEnabled,
+  }) {
+    state = state.copyWith(
+      syncFrequency: syncFrequency,
+      fetchLimit: fetchLimit,
+      securityScanEnabled: securityScanEnabled,
+    );
+  }
+
+  /// Legacy alias kept for compatibility.
   void updateStep3({
     required String smtpHost,
     required int smtpPort,

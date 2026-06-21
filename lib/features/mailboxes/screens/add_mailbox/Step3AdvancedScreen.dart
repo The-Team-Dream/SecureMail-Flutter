@@ -2,19 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox_shared_widgets.dart';
-import 'package:securemail/features/mailboxes/screens/add_mailbox/Step5ReviewScreen.dart';
+import 'package:securemail/features/mailboxes/screens/add_mailbox/Step4ReviewScreen.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox/step_scaffold.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
 import 'package:securemail/core/theme/app_text_styles/AppTextStyles.dart';
 import 'package:securemail/core/theme/app_color/contextExt.dart';
 
-class Step4AdvancedScreen extends ConsumerStatefulWidget {
-  const Step4AdvancedScreen({super.key});
+class Step3AdvancedScreen extends ConsumerStatefulWidget {
+  const Step3AdvancedScreen({super.key});
   @override
-  ConsumerState<Step4AdvancedScreen> createState() =>
-      _Step4AdvancedScreenState();
+  ConsumerState<Step3AdvancedScreen> createState() =>
+      _Step3AdvancedScreenState();
 }
-class _Step4AdvancedScreenState extends ConsumerState<Step4AdvancedScreen> {
+
+class _Step3AdvancedScreenState extends ConsumerState<Step3AdvancedScreen> {
   String _syncFrequency = 'Every 15 minutes';
   final _fetchLimitCtrl = TextEditingController(text: '500');
   bool _securityScan = true;
@@ -51,19 +52,20 @@ class _Step4AdvancedScreenState extends ConsumerState<Step4AdvancedScreen> {
   }
 
   void _next() {
-    ref.read(addMailboxFormProvider.notifier).updateStep4(
+    ref.read(addMailboxFormProvider.notifier).updateStep3Advanced(
           syncFrequency: _syncFrequency,
           fetchLimit: int.tryParse(_fetchLimitCtrl.text) ?? 500,
           securityScanEnabled: _securityScan,
         );
     Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => const Step5ReviewScreen()));
+        .push(MaterialPageRoute(builder: (_) => const Step4ReviewScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
     return StepScaffold(
-      currentStep: 4,
+      currentStep: 3,
+      totalSteps: 4,
       title: 'Configuration Details',
       subtitle:
           'Fine-tune how your mailbox handles incoming data and security.',

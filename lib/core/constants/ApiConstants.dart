@@ -6,7 +6,7 @@ class ApiConstants {
 
   // ── Base URLs ─────────────────────────────────────────────
   static const String baseUrl = 'https://api.securemail.com';
-  static const String IP_ADDRESS = 'http://10.0.0.170:3000';
+  static const String IP_ADDRESS = 'http://10.0.5.55:3000';
 
   // يتم استخدام localhost للويب والـ IP الفعلي للهاتف
   static const String baseUrlDev =

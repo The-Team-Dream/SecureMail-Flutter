@@ -7,19 +7,20 @@ import 'package:securemail/core/theme/app_color/contextExt.dart';
 // ─── Step Progress ────────────────────────────────────────
 
 class StepProgress extends StatelessWidget {
-  const StepProgress({super.key, required this.current});
+  const StepProgress({super.key, required this.current, this.total = 4});
   final int current;
+  final int total;
 
   @override
   Widget build(BuildContext context) {
-    final progressPercent = current * 20;
+    final progressPercent = ((current / total) * 100).round();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Step $current of 5',
+            Text('Step $current of $total',
                 style: AppTextStyles.bodyS.copyWith(color: context.text3)),
             Text('$progressPercent% COMPLETE',
                 style: AppTextStyles.labelS.copyWith(
@@ -31,13 +32,13 @@ class StepProgress extends StatelessWidget {
         const SizedBox(height: AppSpacing.x3),
         Row(
           children: List.generate(
-            5,
+            total,
             (i) => Expanded(
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeInOut,
-                height: 6, // Slightly thicker for a premium feel
-                margin: EdgeInsets.only(right: i < 4 ? AppSpacing.x2 : 0),
+                height: 6,
+                margin: EdgeInsets.only(right: i < total - 1 ? AppSpacing.x2 : 0),
                 decoration: BoxDecoration(
                   color: i < current
                       ? context.button1
@@ -299,7 +300,7 @@ class CustomIcon extends StatelessWidget {
         width: AppSize.avatarMd,
         height: AppSize.avatarMd,
         decoration: BoxDecoration(
-          color: context.button1.withOpacity(0.2),
+          color: context.button1.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(Icons.tune, color: context.button1, size: AppIconSize.md + 2),

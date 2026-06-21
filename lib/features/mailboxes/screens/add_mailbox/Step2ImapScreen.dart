@@ -62,6 +62,10 @@ class _Step2ImapScreenState extends ConsumerState<Step2ImapScreen> {
           imapPort: int.tryParse(_portCtrl.text) ?? 993,
           imapEncryption: _encryption,
           imapPassword: _passCtrl.text,
+          smtpHost: _hostCtrl.text.trim().replaceFirst('imap.', 'smtp.'),
+          smtpPort: 465,
+          smtpEncryption: _encryption,
+          smtpPassword: _passCtrl.text,
         );
 
     Navigator.of(context)

@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-
 import 'package:securemail/features/mailboxes/models/mailbox_model.dart';
 import 'package:securemail/features/mailboxes/providers/mailboxes_provider.dart';
 import 'package:securemail/features/mailboxes/screens/add_mailbox_shared_widgets.dart';
-import 'package:securemail/features/mailboxes/screens/add_mailbox/Step2ImapScreen.dart';
+import 'package:securemail/features/mailboxes/screens/add_mailbox/Step2ImapSmtpScreen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/constants/ApiConstants.dart';
 
 
@@ -64,7 +61,7 @@ class _Step1ProviderScreenState extends ConsumerState<Step1ProviderScreen> {
 
     if (_selected == MailboxProvider.imap) {
       Navigator.of(context)
-          .push(MaterialPageRoute(builder: (_) => const Step2ImapScreen()));
+          .push(MaterialPageRoute(builder: (_) => const Step2ImapSmtpScreen()));
     } else if (_selected == MailboxProvider.gmail && !kIsWeb) {
       // ── Native Google Sign-In Flow for Mobile ────────────────
       final success = await ref.read(mailboxesProvider.notifier).connectGmailNative(displayName: name);
@@ -112,6 +109,7 @@ class _Step1ProviderScreenState extends ConsumerState<Step1ProviderScreen> {
   Widget build(BuildContext context) {
     return StepScaffold(
       currentStep: 1,
+      totalSteps: 4,
       title: 'Step 1: Basic Info',
       subtitle:
           'Identify your new connection and select a service provider.',
@@ -202,7 +200,7 @@ class _ProviderTile extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color:
-              isSelected ? context.button1.withOpacity(0.08) : context.fieldBg,
+              isSelected ? context.button1.withValues(alpha: 0.08) : context.fieldBg,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: isSelected ? context.button1 : context.fieldBorder,

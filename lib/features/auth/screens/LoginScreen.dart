@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:securemail/core/router/app_router.dart';
 import 'package:securemail/core/theme/app_spacing/AppSpacing.dart';
@@ -157,9 +158,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Expanded(
             child: _socialButton(
-          label: 'Google',
-          icon: const Icon(Icons.g_mobiledata,
-              size: 20, color: Color(0xFF4285F4)),
+          label: 'Sign in with Google',
+          icon: SvgPicture.asset(
+            'assets/icons/google.svg',
+            width: 20,
+            height: 20,
+          ),
           onTap: () async {
             final success = await ref.read(authProvider.notifier).loginWithGoogle();
             if (success && mounted) {
@@ -168,15 +172,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           },
         )),
         const SizedBox(width: AppSpacing.x3),
-        Expanded(
-            child: _socialButton(
-          label: 'Outlook',
-          icon: Icon(Icons.email, size: 20, color: context.text1),
-          onTap: () async {
-            await ref.read(authProvider.notifier).loginWithOutlook();
-            // الـ Outlook بيستخدم Browser flow، التحويل هيحصل تلقائياً من الـ Router لما يرجع الـ Deep Link
-          },
-        )),
+        
       ],
     );
   }

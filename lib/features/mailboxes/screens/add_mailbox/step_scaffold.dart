@@ -17,12 +17,16 @@ class StepScaffold extends StatelessWidget {
     required this.body,
     required this.onBack,
     required this.onNext,
+    this.totalSteps = 4,
     this.nextEnabled = true,
     this.nextLoading = false,
   });
 
-  /// Which step number is currently active (1-5).
+  /// Which step number is currently active.
   final int currentStep;
+
+  /// Total number of steps in the flow (default: 4).
+  final int totalSteps;
 
   /// Title shown below the step progress indicator.
   final String title;
@@ -74,7 +78,7 @@ class StepScaffold extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: AppSpacing.screenVertical),
-                      StepProgress(current: currentStep),
+                      StepProgress(current: currentStep, total: totalSteps),
                       const SizedBox(height: AppSpacing.sectionGap),
                       Text(title,
                           style: AppTextStyles.displayS.copyWith(
@@ -93,7 +97,7 @@ class StepScaffold extends StatelessWidget {
                             onBack: onBack,
                             onNext: nextEnabled ? onNext : null,
                             isLoading: nextLoading,
-                            nextLabel: currentStep == 5
+                            nextLabel: currentStep == totalSteps
                                 ? 'Save & Finish'
                                 : 'Next Step',
                           ),
